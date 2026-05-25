@@ -55,6 +55,7 @@ async function handleChat(req, res) {
     const userMessage = String(body.message || "").slice(0, 1200);
     const mode = String(body.mode || "talk");
     const history = Array.isArray(body.history) ? body.history.slice(-12) : [];
+    const profile = typeof body.profile === "object" && body.profile ? body.profile : {};
 
     const input = [
       {
@@ -65,7 +66,8 @@ async function handleChat(req, res) {
             text: JSON.stringify({
               mode,
               user_message: userMessage,
-              recent_history: history
+              recent_history: history,
+              learner_profile: profile
             })
           }
         ]
@@ -133,6 +135,9 @@ Correct mistakes gently. Do not repeat the same template.
 If the user asks your name or greets you, answer naturally.
 If the user's English is unclear, infer the intent and provide a better sentence.
 Keep replies short enough for mobile voice practice.
+Adapt to learner_profile.level and learner_profile.goal.
+Use next_task to guide the learner's next sentence.
+Use correction only when there is a real mistake or a clearly more natural phrase.
 Do not explain your internal reasoning.
 Return only valid JSON matching the schema.
 `;

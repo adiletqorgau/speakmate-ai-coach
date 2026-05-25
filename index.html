@@ -69,6 +69,40 @@
       <button class="hint-button" id="hintButton" type="button">Дать подсказку</button>
     </section>
 
+    <section class="profile-card" aria-label="Личный план">
+      <div class="profile-head">
+        <div>
+          <span>Личный план</span>
+          <strong id="todayScore">0 phrases today</strong>
+        </div>
+        <button id="resetProgressButton" type="button">Сброс</button>
+      </div>
+      <div class="profile-grid">
+        <label>
+          <span>Уровень</span>
+          <select id="levelSelect">
+            <option value="beginner">Beginner</option>
+            <option value="elementary">Elementary</option>
+            <option value="pre-intermediate">Pre-Intermediate</option>
+            <option value="intermediate">Intermediate</option>
+          </select>
+        </label>
+        <label>
+          <span>Цель</span>
+          <select id="goalSelect">
+            <option value="daily conversation">Daily conversation</option>
+            <option value="travel English">Travel English</option>
+            <option value="work English">Work English</option>
+            <option value="grammar correction">Grammar correction</option>
+          </select>
+        </label>
+      </div>
+      <div class="progress-bar" aria-label="Прогресс дня">
+        <span id="progressBar"></span>
+      </div>
+      <p id="focusText">Focus: Say 5 short English sentences today.</p>
+    </section>
+
     <section class="chat-card" aria-label="Диалог с преподавателем">
       <div class="chat-header">
         <strong>Живой диалог</strong>

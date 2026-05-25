@@ -42,6 +42,7 @@ button {
 
 .coach-panel,
 .practice-card,
+.profile-card,
 .chat-card,
 .lesson-card {
   background: rgba(255, 255, 255, 0.92);
@@ -329,6 +330,85 @@ h1 {
   background: #fff2cf;
 }
 
+.profile-card {
+  padding: 14px;
+}
+
+.profile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.profile-head span,
+.profile-grid span {
+  display: block;
+  color: var(--teal-dark);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.profile-head strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink);
+}
+
+.profile-head button {
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.profile-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.profile-grid select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  background: #fff;
+  padding: 0 10px;
+}
+
+.progress-bar {
+  height: 10px;
+  margin: 14px 0 10px;
+  overflow: hidden;
+  background: #dff7f1;
+  border-radius: 999px;
+}
+
+.progress-bar span {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--coral));
+  transition: width 240ms ease;
+}
+
+#focusText {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .chat-card {
   padding: 14px;
 }
@@ -481,6 +561,10 @@ h1 {
   }
 
   .chat-card {
+    grid-column: 1 / -1;
+  }
+
+  .profile-card {
     grid-column: 1 / -1;
   }
 }

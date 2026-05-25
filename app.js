@@ -37,12 +37,26 @@ const tabs = document.querySelectorAll(".mode-tab");
 const chatList = document.querySelector("#chatList");
 const clearChatButton = document.querySelector("#clearChatButton");
 const installButton = document.querySelector("#installButton");
+const levelSelect = document.querySelector("#levelSelect");
+const goalSelect = document.querySelector("#goalSelect");
+const todayScore = document.querySelector("#todayScore");
+const progressBar = document.querySelector("#progressBar");
+const focusText = document.querySelector("#focusText");
+const resetProgressButton = document.querySelector("#resetProgressButton");
 
 let currentMode = "talk";
 let voiceEnabled = true;
 let recognition = null;
 let deferredInstallPrompt = null;
 let history = JSON.parse(localStorage.getItem("speakmate-history") || "[]");
+let profile = JSON.parse(localStorage.getItem("speakmate-profile") || "null") || {
+  level: "beginner",
+  goal: "daily conversation",
+  day: todayKey(),
+  phrasesToday: 0,
+  correctionsToday: 0,
+  focus: "Say 5 short English sentences today."
+};
 
 function speak(text) {
   if (!voiceEnabled || !("speechSynthesis" in window)) {
@@ -76,6 +90,45 @@ function addMessage(role, text, note = "") {
   history = history.slice(-20);
   localStorage.setItem("speakmate-history", JSON.stringify(history));
   renderChat();
+}
+
+function saveProfile() {
+  localStorage.setItem("speakmate-profile", JSON.stringify(profile));
+}
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function refreshDailyProfile() {
+  if (profile.day !== todayKey()) {
+    profile.day = todayKey();
+    profile.phrasesToday = 0;
+    profile.correctionsToday = 0;
+    profile.focus = "Start your day with 5 easy English sentences.";
+    saveProfile();
+  }
+}
+
+function renderProfile() {
+  refreshDailyProfile();
+  levelSelect.value = profile.level;
+  goalSelect.value = profile.goal;
+  todayScore.textContent = `${profile.phrasesToday} phrases today`;
+  progressBar.style.width = `${Math.min(profile.phrasesToday * 10, 100)}%`;
+  focusText.textContent = `Focus: ${profile.focus}`;
+}
+
+function updateProgress(data) {
+  profile.phrasesToday += 1;
+  if (data.correction) {
+    profile.correctionsToday += 1;
+  }
+  if (data.next_task) {
+    profile.focus = data.next_task;
+  }
+  saveProfile();
+  renderProfile();
 }
 
 function renderChat() {
@@ -118,7 +171,8 @@ async function askCoach(text) {
       body: JSON.stringify({
         message,
         mode: currentMode,
-        history: history.slice(-12)
+        history: history.slice(-12),
+        profile
       })
     });
 
@@ -135,6 +189,7 @@ async function askCoach(text) {
     if (data.next_task) {
       currentTask.textContent = data.next_task;
     }
+    updateProgress(data);
     speak(data.speak_text || coachText);
   } catch (error) {
     const messageText = error.message.includes("OPENAI_API_KEY")
@@ -236,6 +291,28 @@ clearChatButton.addEventListener("click", () => {
   renderChat();
 });
 
+levelSelect.addEventListener("change", () => {
+  profile.level = levelSelect.value;
+  profile.focus = `Practice ${profile.goal} at ${profile.level} level.`;
+  saveProfile();
+  renderProfile();
+});
+
+goalSelect.addEventListener("change", () => {
+  profile.goal = goalSelect.value;
+  profile.focus = `Practice ${profile.goal} at ${profile.level} level.`;
+  saveProfile();
+  renderProfile();
+});
+
+resetProgressButton.addEventListener("click", () => {
+  profile.phrasesToday = 0;
+  profile.correctionsToday = 0;
+  profile.focus = "Say 5 short English sentences today.";
+  saveProfile();
+  renderProfile();
+});
+
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
   deferredInstallPrompt = event;
@@ -259,3 +336,4 @@ if ("serviceWorker" in navigator) {
 recognition = setupRecognition();
 updateLesson(currentMode, false);
 renderChat();
+renderProfile();

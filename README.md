@@ -3,6 +3,13 @@
 Mobile PWA prototype with a real OpenAI-backed tutor endpoint.
 Default model: `gpt-4o-mini` for reliable low-cost chat practice.
 
+## New in this version
+
+- Learner profile: level and learning goal.
+- Daily progress counter.
+- Daily focus task saved on the device.
+- The AI receives the learner profile and adapts replies.
+
 ## Run
 
 1. Set an OpenAI API key in the terminal:
