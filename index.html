@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpeakMate - AI English Coach</title>
+  <meta name="theme-color" content="#0f766e">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="coach-panel" aria-labelledby="app-title">
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">AI English Coach</p>
+          <h1 id="app-title">SpeakMate</h1>
+        </div>
+        <button class="icon-button" id="soundToggle" type="button" aria-label="Включить или выключить голос">🔊</button>
+      </div>
+
+      <div class="avatar-stage">
+        <div class="pulse-ring"></div>
+        <div class="avatar-wrap" id="avatarWrap">
+          <img class="avatar" src="assets/ai-tutor.png" alt="AI преподаватель английского">
+          <span class="mouth"></span>
+          <span class="voice-bars" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </span>
+        </div>
+        <div class="speech-bubble" id="coachBubble">
+          Hi! I am Alex. Today I will help you speak English with confidence.
+        </div>
+      </div>
+
+      <div class="mode-tabs" role="tablist" aria-label="Режим обучения">
+        <button class="mode-tab active" type="button" data-mode="talk">Разговор</button>
+        <button class="mode-tab" type="button" data-mode="lesson">Урок</button>
+        <button class="mode-tab" type="button" data-mode="daily">День</button>
+      </div>
+      <button class="install-button" id="installButton" type="button" hidden>Установить на телефон</button>
+    </section>
+
+    <section class="practice-card" aria-label="Голосовая практика">
+      <div class="status-row">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Готова слушать</span>
+      </div>
+
+      <div class="transcript-box">
+        <span>Ты сказала</span>
+        <p id="transcript">Нажми микрофон и скажи фразу на английском.</p>
+      </div>
+
+      <div class="feedback-box">
+        <span>Исправление</span>
+        <p id="feedback">Я поправлю грамматику, произношение и предложу лучший вариант.</p>
+      </div>
+
+      <label class="type-box">
+        <span>Напиши или исправь фразу</span>
+        <textarea id="typedPhrase" rows="2" placeholder="Например: I want to speak English better"></textarea>
+      </label>
+
+      <div class="controls">
+        <button class="primary-button" id="micButton" type="button">🎙️ Говорить</button>
+        <button class="secondary-button" id="sendTextButton" type="button">Отправить</button>
+      </div>
+      <button class="hint-button" id="hintButton" type="button">Дать подсказку</button>
+    </section>
+
+    <section class="chat-card" aria-label="Диалог с преподавателем">
+      <div class="chat-header">
+        <strong>Живой диалог</strong>
+        <button id="clearChatButton" type="button">Очистить</button>
+      </div>
+      <div class="chat-list" id="chatList"></div>
+    </section>
+
+    <section class="lesson-grid" aria-label="План обучения">
+      <article class="lesson-card">
+        <strong>Слова дня</strong>
+        <ul id="wordsList"></ul>
+      </article>
+      <article class="lesson-card">
+        <strong>Мини-диалог</strong>
+        <p id="dialogTask"></p>
+      </article>
+      <article class="lesson-card wide">
+        <strong>Задание прямо сейчас</strong>
+        <p id="currentTask"></p>
+      </article>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
