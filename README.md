@@ -1,103 +1,41 @@
-# Как установить SpeakMate на телефон
+# SpeakMate AI English Coach
 
-## Что уже готово
+Mobile PWA prototype with a real OpenAI-backed tutor endpoint.
+Default model: `gpt-4o-mini` for reliable low-cost chat practice.
 
-Приложение уже работает на компьютере:
+## New in this version
 
-- есть AI-преподаватель Alex;
-- ответы идут через OpenAI API;
-- можно писать фразы;
-- можно говорить через микрофон в Chrome;
-- приложение подготовлено как PWA для телефона.
+- Learner profile: level and learning goal.
+- Daily progress counter.
+- Daily focus task saved on the device.
+- The AI receives the learner profile and adapts replies.
 
-## Почему нельзя просто скачать на телефон
+## Run
 
-OpenAI API key нельзя хранить внутри приложения на телефоне. Его могут украсть.
+1. Set an OpenAI API key in the terminal:
 
-Поэтому нужна схема:
-
-телефон -> HTTPS-сайт приложения -> сервер -> OpenAI
-
-API key хранится только на сервере.
-
-## Самый простой путь
-
-Использовать Render:
-
-https://render.com
-
-## Что понадобится
-
-1. GitHub аккаунт.
-2. Render аккаунт.
-3. OpenAI API key.
-4. Папка `english-ai-coach`.
-
-## Шаги
-
-1. Создать новый репозиторий на GitHub, например:
-
-```text
-speakmate-ai-coach
+```bat
+set OPENAI_API_KEY=your_key_here
 ```
 
-2. Загрузить туда все файлы из папки `english-ai-coach`.
+2. Start the app:
 
-3. Открыть Render.
-
-4. Нажать:
-
-```text
-New -> Web Service
+```bat
+start-app.bat
 ```
 
-5. Выбрать репозиторий `speakmate-ai-coach`.
-
-6. В настройках Render указать:
+3. Open:
 
 ```text
-Build Command: npm install
-Start Command: npm start
+http://127.0.0.1:4321
 ```
 
-7. В Environment Variables добавить:
+## Mobile
 
-```text
-OPENAI_API_KEY = твой OpenAI API key
-HOST = 0.0.0.0
-OPENAI_MODEL = gpt-4o-mini
-```
+To install on a phone, host the app on HTTPS. Render is the simplest first option:
 
-8. Нажать Deploy.
-
-9. Render даст ссылку вида:
-
-```text
-https://speakmate-ai-coach.onrender.com
-```
-
-10. Открыть эту ссылку на телефоне.
-
-11. В Chrome на Android:
-
-```text
-Меню -> Добавить на главный экран
-```
-
-На iPhone в Safari:
-
-```text
-Поделиться -> На экран Домой
-```
-
-## Важно про расходы
-
-Сейчас используется модель:
-
-```text
-gpt-4o-mini
-```
-
-Она недорогая и подходит для разговорного английского.
-
-Чтобы случайно не потратить много, в OpenAI Platform поставь месячный лимит расходов.
+1. Create a GitHub repository and upload this folder.
+2. Create a new Render Web Service from the repository.
+3. Add environment variable `OPENAI_API_KEY`.
+4. Start command: `npm start`.
+5. Open the Render HTTPS URL on your phone and choose Add to Home Screen.
