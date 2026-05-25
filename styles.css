@@ -44,6 +44,7 @@ button {
 .practice-card,
 .profile-card,
 .chat-card,
+.mistakes-card,
 .lesson-card {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--line);
@@ -413,6 +414,10 @@ h1 {
   padding: 14px;
 }
 
+.mistakes-card {
+  padding: 14px;
+}
+
 .chat-header {
   display: flex;
   align-items: center;
@@ -462,6 +467,51 @@ h1 {
   display: block;
   margin-top: 8px;
   color: var(--muted);
+}
+
+.mistake-summary {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.mistake-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mistake-item {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: #f8fffd;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.mistake-item strong {
+  color: var(--teal-dark);
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.mistake-item p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.mistake-item button {
+  justify-self: start;
+  min-height: 36px;
+  border: 0;
+  border-radius: var(--radius);
+  color: #fff;
+  background: var(--teal);
+  padding: 0 12px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .lesson-grid {
@@ -565,6 +615,10 @@ h1 {
   }
 
   .profile-card {
+    grid-column: 1 / -1;
+  }
+
+  .mistakes-card {
     grid-column: 1 / -1;
   }
 }

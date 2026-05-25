@@ -93,13 +93,14 @@ async function handleChat(req, res) {
             schema: {
               type: "object",
               additionalProperties: false,
-              required: ["reply_en", "correction", "explanation_ru", "next_task", "speak_text"],
+              required: ["reply_en", "correction", "explanation_ru", "next_task", "speak_text", "mistake_category"],
               properties: {
                 reply_en: { type: "string" },
                 correction: { type: "string" },
                 explanation_ru: { type: "string" },
                 next_task: { type: "string" },
-                speak_text: { type: "string" }
+                speak_text: { type: "string" },
+                mistake_category: { type: "string" }
               }
             }
           }
@@ -138,6 +139,7 @@ Keep replies short enough for mobile voice practice.
 Adapt to learner_profile.level and learner_profile.goal.
 Use next_task to guide the learner's next sentence.
 Use correction only when there is a real mistake or a clearly more natural phrase.
+Use mistake_category to classify the correction, for example: Grammar, Word order, Vocabulary, Pronunciation hint, Natural phrase, or No mistake.
 Do not explain your internal reasoning.
 Return only valid JSON matching the schema.
 `;

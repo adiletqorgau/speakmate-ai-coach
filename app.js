@@ -43,12 +43,16 @@ const todayScore = document.querySelector("#todayScore");
 const progressBar = document.querySelector("#progressBar");
 const focusText = document.querySelector("#focusText");
 const resetProgressButton = document.querySelector("#resetProgressButton");
+const mistakeSummary = document.querySelector("#mistakeSummary");
+const mistakeList = document.querySelector("#mistakeList");
+const clearMistakesButton = document.querySelector("#clearMistakesButton");
 
 let currentMode = "talk";
 let voiceEnabled = true;
 let recognition = null;
 let deferredInstallPrompt = null;
 let history = JSON.parse(localStorage.getItem("speakmate-history") || "[]");
+let mistakes = JSON.parse(localStorage.getItem("speakmate-mistakes") || "[]");
 let profile = JSON.parse(localStorage.getItem("speakmate-profile") || "null") || {
   level: "beginner",
   goal: "daily conversation",
@@ -142,6 +146,52 @@ function renderChat() {
   chatList.scrollTop = chatList.scrollHeight;
 }
 
+function saveMistakes() {
+  localStorage.setItem("speakmate-mistakes", JSON.stringify(mistakes));
+}
+
+function addMistake(userText, data) {
+  if (!data.correction || data.correction.trim().length < 3) {
+    return;
+  }
+
+  const item = {
+    id: Date.now(),
+    original: userText,
+    correction: data.correction,
+    explanation: data.explanation_ru || "",
+    category: data.mistake_category || "General",
+    date: todayKey()
+  };
+
+  mistakes.unshift(item);
+  mistakes = mistakes.slice(0, 20);
+  saveMistakes();
+  renderMistakes();
+}
+
+function renderMistakes() {
+  if (!mistakes.length) {
+    mistakeSummary.textContent = "Пока ошибок нет. Скажи или напиши фразу, и Alex сохранит полезные исправления.";
+    mistakeList.innerHTML = "";
+    return;
+  }
+
+  mistakeSummary.textContent = `Сохранено ошибок: ${mistakes.length}. Повторяй их, чтобы Alex видел прогресс.`;
+  mistakeList.innerHTML = mistakes
+    .slice(0, 6)
+    .map((item) => `
+      <article class="mistake-item">
+        <strong>${escapeHtml(item.category)}</strong>
+        <p><b>Ты:</b> ${escapeHtml(item.original)}</p>
+        <p><b>Лучше:</b> ${escapeHtml(item.correction)}</p>
+        ${item.explanation ? `<p>${escapeHtml(item.explanation)}</p>` : ""}
+        <button type="button" data-repeat="${escapeHtml(item.correction)}">Повторить</button>
+      </article>
+    `)
+    .join("");
+}
+
 function escapeHtml(value) {
   return value.replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",
@@ -186,6 +236,7 @@ async function askCoach(text) {
     feedback.textContent = note || data.next_task || "Good. Let's continue.";
     coachBubble.textContent = coachText;
     addMessage("coach", coachText, note);
+    addMistake(message, data);
     if (data.next_task) {
       currentTask.textContent = data.next_task;
     }
@@ -291,6 +342,22 @@ clearChatButton.addEventListener("click", () => {
   renderChat();
 });
 
+clearMistakesButton.addEventListener("click", () => {
+  mistakes = [];
+  localStorage.removeItem("speakmate-mistakes");
+  renderMistakes();
+});
+
+mistakeList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-repeat]");
+  if (!button) {
+    return;
+  }
+  typedPhrase.value = button.dataset.repeat;
+  typedPhrase.focus();
+  feedback.textContent = "Повтори эту фразу вслух или нажми Отправить, чтобы Alex проверил еще раз.";
+});
+
 levelSelect.addEventListener("change", () => {
   profile.level = levelSelect.value;
   profile.focus = `Practice ${profile.goal} at ${profile.level} level.`;
@@ -337,3 +404,4 @@ recognition = setupRecognition();
 updateLesson(currentMode, false);
 renderChat();
 renderProfile();
+renderMistakes();
