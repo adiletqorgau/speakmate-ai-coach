@@ -165,6 +165,10 @@ const coachFocusSelect = document.querySelector("#coachFocusSelect");
 const resetPersonalityButton = document.querySelector("#resetPersonalityButton");
 const closeSettingsButton = document.querySelector("#closeSettingsButton");
 const personalitySummary = document.querySelector("#personalitySummary");
+const closePaywallButton = document.querySelector("#closePaywallButton");
+
+const FREE_MESSAGE_LIMIT = 10;
+const PAYMENT_TELEGRAM_URL = "https://t.me/adiletqorgau";
 
 const pronunciationPhrases = [
   "I want to speak English clearly.",
@@ -232,6 +236,10 @@ let personality = JSON.parse(localStorage.getItem("speakmate-personality") || "n
   russianLevel: "balanced",
   speechSpeed: "slow",
   focus: "speaking"
+};
+let usageLimit = JSON.parse(localStorage.getItem("speakmate-usage-limit") || "null") || {
+  day: todayKey(),
+  count: 0
 };
 let profile = JSON.parse(localStorage.getItem("speakmate-profile") || "null") || {
   level: "beginner",
@@ -810,6 +818,41 @@ function closeSettings() {
   document.querySelector(".settings-modal")?.setAttribute("aria-hidden", "true");
 }
 
+function refreshUsageLimit() {
+  if (usageLimit.day !== todayKey()) {
+    usageLimit = {
+      day: todayKey(),
+      count: 0
+    };
+    saveUsageLimit();
+  }
+}
+
+function saveUsageLimit() {
+  localStorage.setItem("speakmate-usage-limit", JSON.stringify(usageLimit));
+}
+
+function openPaywall() {
+  document.body.classList.add("paywall-open");
+  document.querySelector(".paywall-modal")?.setAttribute("aria-hidden", "false");
+}
+
+function closePaywall() {
+  document.body.classList.remove("paywall-open");
+  document.querySelector(".paywall-modal")?.setAttribute("aria-hidden", "true");
+}
+
+function canSendAiMessage() {
+  refreshUsageLimit();
+  if (usageLimit.count >= FREE_MESSAGE_LIMIT) {
+    openPaywall();
+    return false;
+  }
+  usageLimit.count += 1;
+  saveUsageLimit();
+  return true;
+}
+
 function renderMistakes() {
   if (!mistakes.length) {
     mistakeSummary.textContent = "Пока ошибок нет. Скажи или напиши фразу, и Alex сохранит полезные исправления.";
@@ -924,6 +967,10 @@ async function askCoach(text, options = {}) {
   const message = text.trim();
   if (!message) {
     feedback.textContent = "Напиши или скажи фразу на английском.";
+    return;
+  }
+
+  if (!canSendAiMessage()) {
     return;
   }
 
@@ -1073,10 +1120,14 @@ jumpViewButtons.forEach((button) => {
 
 settingsButton.addEventListener("click", openSettings);
 closeSettingsButton.addEventListener("click", closeSettings);
+closePaywallButton.addEventListener("click", closePaywall);
+
+document.querySelector("#paywallTelegramButton")?.setAttribute("href", PAYMENT_TELEGRAM_URL);
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeSettings();
+    closePaywall();
   }
 });
 

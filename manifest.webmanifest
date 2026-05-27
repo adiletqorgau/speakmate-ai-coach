@@ -2,7 +2,7 @@
   "name": "SpeakMate AI English Coach",
   "short_name": "SpeakMate",
   "description": "AI English teacher that talks, corrects, and guides daily practice.",
-  "start_url": "./?v=16",
+  "start_url": "./?v=17",
   "display": "standalone",
   "background_color": "#f3fbf9",
   "theme_color": "#0f766e",
