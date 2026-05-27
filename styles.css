@@ -347,13 +347,46 @@ h1 {
 }
 
 .main-dialog-card {
+  order: 3;
   padding-top: 12px;
+  place-items: center;
+  text-align: center;
 }
 
 .main-dialog-card .transcript-box,
 .main-dialog-card .feedback-box,
-.main-dialog-card .hint-button {
+.main-dialog-card .hint-button,
+.main-dialog-card .type-box,
+.main-dialog-card #sendTextButton {
   display: none;
+}
+
+.main-dialog-card .status-row {
+  justify-content: center;
+  width: 100%;
+}
+
+.main-dialog-card .controls {
+  justify-content: center;
+  width: 100%;
+}
+
+.main-dialog-card #micButton {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: min(260px, 74vw);
+  height: min(260px, 74vw);
+  min-height: 0;
+  border-radius: 50%;
+  font-size: 28px;
+  line-height: 1.15;
+  box-shadow: 0 22px 60px rgba(15, 118, 110, 0.28);
+}
+
+.main-dialog-card #micButton.listening {
+  background: var(--coral);
+  animation: micPulse 1s ease-in-out infinite;
 }
 
 .status-row {
@@ -1350,6 +1383,17 @@ body.paywall-open .paywall-modal {
 @keyframes blink {
   50% {
     opacity: 0.35;
+  }
+}
+
+@keyframes micPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 22px 60px rgba(249, 115, 107, 0.28);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 28px 72px rgba(249, 115, 107, 0.38);
   }
 }
 

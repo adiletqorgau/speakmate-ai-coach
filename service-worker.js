@@ -1,4 +1,4 @@
-const CACHE = "speakmate-v18";
+const CACHE = "speakmate-v19";
 const ASSETS = [
   "./",
   "./index.html",

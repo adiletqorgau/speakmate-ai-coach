@@ -6,7 +6,7 @@ const root = process.cwd();
 const port = Number(process.env.PORT || 4321);
 const host = process.env.HOST || "127.0.0.1";
 const apiKey = process.env.OPENAI_API_KEY || "";
-const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const model = process.env.OPENAI_MODEL || "gpt-5.4-nano";
 
 const types = {
   ".html": "text/html; charset=utf-8",

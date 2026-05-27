@@ -203,6 +203,7 @@ const defaultDailyPlan = [
 let currentMode = "talk";
 let voiceEnabled = true;
 let recognition = null;
+let isRecognitionActive = false;
 let deferredInstallPrompt = null;
 let history = JSON.parse(localStorage.getItem("speakmate-history") || "[]");
 let mistakes = JSON.parse(localStorage.getItem("speakmate-mistakes") || "[]");
@@ -1063,10 +1064,13 @@ function setThinking(isThinking) {
 }
 
 function setListening(isListening) {
+  isRecognitionActive = isListening;
   statusDot.classList.toggle("listening", isListening);
   avatarWrap.classList.toggle("listening", isListening);
+  micButton.classList.toggle("listening", isListening);
   statusText.textContent = isListening ? "Слушаю тебя..." : "Готова слушать";
   micButton.textContent = isListening ? "Слушаю..." : "🎙️ Говорить";
+  micButton.textContent = isListening ? "Stop" : "Talk";
 }
 
 function makeAvatarGesture() {
@@ -1098,6 +1102,7 @@ function setupRecognition() {
   instance.addEventListener("error", () => {
     setListening(false);
     feedback.textContent = "Микрофон не сработал. Можно написать фразу вручную и нажать Отправить.";
+    feedback.textContent = "Microphone did not hear you. Try again in Chrome and allow the microphone.";
   });
 
   return instance;
@@ -1137,7 +1142,16 @@ micButton.addEventListener("click", () => {
     return;
   }
 
-  recognition.start();
+  if (isRecognitionActive) {
+    recognition.stop();
+    return;
+  }
+
+  try {
+    recognition.start();
+  } catch {
+    setListening(false);
+  }
 });
 
 sendTextButton.addEventListener("click", () => askCoach(typedPhrase.value));
