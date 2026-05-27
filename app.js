@@ -90,6 +90,7 @@ const sendTextButton = document.querySelector("#sendTextButton");
 const typedPhrase = document.querySelector("#typedPhrase");
 const statusDot = document.querySelector("#statusDot");
 const statusText = document.querySelector("#statusText");
+const settingsButton = document.querySelector("#settingsButton");
 const soundToggle = document.querySelector("#soundToggle");
 const avatarWrap = document.querySelector("#avatarWrap");
 const wordsList = document.querySelector("#wordsList");
@@ -162,6 +163,7 @@ const russianLevelSelect = document.querySelector("#russianLevelSelect");
 const speechSpeedSelect = document.querySelector("#speechSpeedSelect");
 const coachFocusSelect = document.querySelector("#coachFocusSelect");
 const resetPersonalityButton = document.querySelector("#resetPersonalityButton");
+const closeSettingsButton = document.querySelector("#closeSettingsButton");
 const personalitySummary = document.querySelector("#personalitySummary");
 
 const pronunciationPhrases = [
@@ -798,6 +800,16 @@ function updatePersonality() {
   coachBubble.textContent = personalityText();
 }
 
+function openSettings() {
+  document.body.classList.add("settings-open");
+  document.querySelector(".settings-modal")?.setAttribute("aria-hidden", "false");
+}
+
+function closeSettings() {
+  document.body.classList.remove("settings-open");
+  document.querySelector(".settings-modal")?.setAttribute("aria-hidden", "true");
+}
+
 function renderMistakes() {
   if (!mistakes.length) {
     mistakeSummary.textContent = "Пока ошибок нет. Скажи или напиши фразу, и Alex сохранит полезные исправления.";
@@ -1057,6 +1069,15 @@ appNavButtons.forEach((button) => {
 
 jumpViewButtons.forEach((button) => {
   button.addEventListener("click", () => setAppView(button.dataset.jumpView));
+});
+
+settingsButton.addEventListener("click", openSettings);
+closeSettingsButton.addEventListener("click", closeSettings);
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeSettings();
+  }
 });
 
 micButton.addEventListener("click", () => {
@@ -1324,7 +1345,7 @@ if ("serviceWorker" in navigator) {
 
 recognition = setupRecognition();
 updateLesson(currentMode, false);
-setAppView(localStorage.getItem("speakmate-active-view") || "home");
+setAppView("home");
 renderChat();
 renderProfile();
 renderMistakes();

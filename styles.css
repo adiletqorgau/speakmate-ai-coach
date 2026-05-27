@@ -21,10 +21,7 @@ body {
   margin: 0;
   min-height: 100vh;
   color: var(--ink);
-  background:
-    linear-gradient(135deg, rgba(15, 118, 110, 0.12), transparent 35%),
-    linear-gradient(315deg, rgba(249, 115, 107, 0.12), transparent 35%),
-    var(--bg);
+  background: var(--bg);
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -36,9 +33,9 @@ button {
   width: min(430px, 100%);
   min-height: 100vh;
   margin: 0 auto;
-  padding: 16px 16px 88px;
+  padding: 12px;
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .coach-panel,
@@ -62,7 +59,14 @@ button {
 }
 
 .coach-panel {
+  order: 1;
   padding: 16px;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .app-nav {
@@ -302,7 +306,7 @@ h1 {
 }
 
 .mode-tabs {
-  display: grid;
+  display: none;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
@@ -336,9 +340,20 @@ h1 {
 }
 
 .practice-card {
+  order: 4;
   padding: 16px;
   display: grid;
   gap: 12px;
+}
+
+.main-dialog-card {
+  padding-top: 12px;
+}
+
+.main-dialog-card .transcript-box,
+.main-dialog-card .feedback-box,
+.main-dialog-card .hint-button {
+  display: none;
 }
 
 .status-row {
@@ -434,6 +449,7 @@ h1 {
 }
 
 .profile-card {
+  order: 2;
   padding: 14px;
 }
 
@@ -455,6 +471,10 @@ h1 {
 
 .personality-card {
   padding: 14px;
+}
+
+.removed-panel {
+  display: none !important;
 }
 
 .profile-head {
@@ -844,6 +864,7 @@ h1 {
 }
 
 .chat-card {
+  order: 3;
   padding: 14px;
 }
 
@@ -886,7 +907,8 @@ h1 {
 .chat-list {
   display: grid;
   gap: 10px;
-  max-height: 340px;
+  min-height: 190px;
+  max-height: 360px;
   overflow-y: auto;
 }
 
@@ -1100,10 +1122,46 @@ h1 {
 }
 
 .lesson-grid {
+  order: 20;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   padding-bottom: 16px;
+}
+
+body.settings-open {
+  overflow: hidden;
+}
+
+body.settings-open::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(16, 32, 51, 0.42);
+}
+
+.settings-modal {
+  display: none;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 90;
+  width: min(390px, calc(100% - 24px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 24px 80px rgba(16, 32, 51, 0.32);
+}
+
+body.settings-open .settings-modal {
+  display: block;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .lesson-card {

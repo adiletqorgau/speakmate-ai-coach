@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SpeakMate - AI English Coach</title>
   <meta name="theme-color" content="#0f766e">
-  <meta name="app-version" content="15">
+  <meta name="app-version" content="16">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -17,7 +17,10 @@
           <p class="eyebrow">AI English Coach</p>
           <h1 id="app-title">SpeakMate</h1>
         </div>
-        <button class="icon-button" id="soundToggle" type="button" aria-label="Включить или выключить голос">🔊</button>
+        <div class="top-actions">
+          <button class="icon-button" id="settingsButton" type="button" aria-label="Настройки Alex">⚙️</button>
+          <button class="icon-button" id="soundToggle" type="button" aria-label="Включить или выключить голос">🔊</button>
+        </div>
       </div>
 
       <div class="avatar-stage">
@@ -44,7 +47,7 @@
       <button class="install-button" id="installButton" type="button" hidden>Установить на телефон</button>
     </section>
 
-    <nav class="app-nav" aria-label="Разделы приложения">
+    <nav class="app-nav" aria-label="Разделы приложения" hidden>
       <button class="app-nav-button active" type="button" data-view="home">Главная</button>
       <button class="app-nav-button" type="button" data-view="lesson">Урок</button>
       <button class="app-nav-button" type="button" data-view="practice">Практика</button>
@@ -52,13 +55,13 @@
       <button class="app-nav-button" type="button" data-view="settings">Настройки</button>
     </nav>
 
-    <section class="home-actions" data-panel="home" aria-label="Быстрый старт">
+    <section class="home-actions" data-panel="home" aria-label="Быстрый старт" hidden>
       <button type="button" data-jump-view="practice">Говорить с Alex</button>
       <button type="button" data-jump-view="lesson">Начать урок</button>
       <button type="button" data-jump-view="day">План на день</button>
     </section>
 
-    <section class="practice-card" data-panel="practice" aria-label="Голосовая практика">
+    <section class="practice-card main-dialog-card" data-panel="home practice" aria-label="Голосовая практика">
       <div class="status-row">
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText">Готова слушать</span>
@@ -146,7 +149,7 @@
       </div>
     </section>
 
-    <section class="exam-card" data-panel="day" aria-label="Экзамен дня">
+    <section class="exam-card removed-panel" data-panel="day" aria-label="Экзамен дня">
       <div class="chat-header">
         <strong>Экзамен дня</strong>
         <span id="examScoreBadge">0 / 3</span>
@@ -170,7 +173,7 @@
       </div>
     </section>
 
-    <section class="vocabulary-card" data-panel="practice lesson" aria-label="Личный словарь">
+    <section class="vocabulary-card removed-panel" data-panel="practice lesson" aria-label="Личный словарь">
       <div class="chat-header">
         <strong>Личный словарь</strong>
         <button id="clearVocabularyButton" type="button">Очистить</button>
@@ -193,7 +196,7 @@
       <div class="vocabulary-list" id="vocabularyList"></div>
     </section>
 
-    <section class="reminder-card" data-panel="day settings" aria-label="Напоминания">
+    <section class="reminder-card removed-panel" data-panel="day settings" aria-label="Напоминания">
       <div class="chat-header">
         <strong>Режим дня</strong>
         <button id="resetRemindersButton" type="button">Сброс</button>
@@ -220,10 +223,13 @@
       <div class="reminder-list" id="reminderList"></div>
     </section>
 
-    <section class="personality-card" data-panel="settings" aria-label="Личность Alex">
+    <section class="personality-card settings-modal" aria-label="Личность Alex" aria-hidden="true">
       <div class="chat-header">
         <strong>Личность Alex</strong>
-        <button id="resetPersonalityButton" type="button">Сброс</button>
+        <div class="modal-actions">
+          <button id="resetPersonalityButton" type="button">Сброс</button>
+          <button id="closeSettingsButton" type="button" aria-label="Закрыть настройки">✕</button>
+        </div>
       </div>
       <div class="personality-grid">
         <label>
@@ -300,7 +306,7 @@
       </div>
     </section>
 
-    <section class="daily-plan-card" data-panel="day home" aria-label="План на день">
+    <section class="daily-plan-card" data-panel="day" aria-label="План на день">
       <div class="chat-header">
         <strong>План на день</strong>
         <button id="resetDailyPlanButton" type="button">Сброс</button>
@@ -308,7 +314,7 @@
       <div class="daily-plan-list" id="dailyPlanList"></div>
     </section>
 
-    <section class="memory-card" data-panel="day settings" aria-label="Память ученика">
+    <section class="memory-card removed-panel" data-panel="day settings" aria-label="Память ученика">
       <div class="chat-header">
         <strong>Слабые темы</strong>
         <button id="resetMemoryButton" type="button">Сброс</button>
@@ -317,7 +323,7 @@
       <div class="weakness-list" id="weaknessList"></div>
     </section>
 
-    <section class="lesson-grid" data-panel="lesson home" aria-label="План обучения">
+    <section class="lesson-grid" data-panel="lesson" aria-label="План обучения">
       <article class="lesson-card">
         <strong>Слова дня</strong>
         <ul id="wordsList"></ul>
