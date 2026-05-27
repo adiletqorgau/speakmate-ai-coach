@@ -167,7 +167,7 @@ const closeSettingsButton = document.querySelector("#closeSettingsButton");
 const personalitySummary = document.querySelector("#personalitySummary");
 const closePaywallButton = document.querySelector("#closePaywallButton");
 
-const FREE_MESSAGE_LIMIT = 10;
+const FREE_MESSAGE_LIMIT = 5;
 const PAYMENT_TELEGRAM_URL = "https://t.me/adiletqorgau";
 
 const pronunciationPhrases = [
@@ -843,6 +843,22 @@ function closePaywall() {
   document.querySelector(".paywall-modal")?.setAttribute("aria-hidden", "true");
 }
 
+function isLessonClosingPhrase(message) {
+  const clean = message.toLowerCase();
+  return [
+    "на сегодня все",
+    "на сегодня всё",
+    "сегодня все",
+    "сегодня всё",
+    "хватит",
+    "пока",
+    "bye",
+    "goodbye",
+    "that's all",
+    "that is all"
+  ].some((phrase) => clean.includes(phrase));
+}
+
 function canSendAiMessage() {
   refreshUsageLimit();
   if (usageLimit.count >= FREE_MESSAGE_LIMIT) {
@@ -971,6 +987,14 @@ async function askCoach(text, options = {}) {
     return;
   }
 
+  if (isLessonClosingPhrase(message)) {
+    transcript.textContent = message;
+    typedPhrase.value = "";
+    addMessage("user", message);
+    openPaywall();
+    return;
+  }
+
   if (!canSendAiMessage()) {
     return;
   }
@@ -1038,6 +1062,9 @@ async function askCoach(text, options = {}) {
         : `${note || coachText} Press Next after reading.`;
     }
     speak(data.speak_text || coachText);
+    if (usageLimit.count >= FREE_MESSAGE_LIMIT) {
+      window.setTimeout(openPaywall, 900);
+    }
   } catch (error) {
     const messageText = error.message.includes("OPENAI_API_KEY")
       ? "Нужно добавить OpenAI API key на сервер. Я ниже объясню, как."
