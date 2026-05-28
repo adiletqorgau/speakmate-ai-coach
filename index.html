@@ -12,6 +12,7 @@ const paywallTelegramButton = document.querySelector("#paywallTelegramButton");
 const PAYMENT_TELEGRAM_URL = "https://t.me/adiletqorgau";
 const FREE_CALL_MS = 3 * 60 * 1000;
 const FREE_TURN_LIMIT = 5;
+const SIGNALING_TIMEOUT_MS = 25000;
 const TRIAL_END_MESSAGE = "На сегодня наш пробный созвон окончен, ты отлично поработал! Чтобы созваниваться со мной каждый день и учить язык без барьеров, активируй PRO-версию.";
 
 let peerConnection = null;
@@ -22,6 +23,7 @@ let callStartedAt = 0;
 let timerId = null;
 let callLimitTimerId = null;
 let endAfterMessageTimerId = null;
+let signalingTimeoutId = null;
 let userTurns = 0;
 let isEnding = false;
 let deferredInstallPrompt = null;
@@ -83,6 +85,7 @@ function closePaywall() {
 function cleanupCall() {
   window.clearTimeout(callLimitTimerId);
   window.clearTimeout(endAfterMessageTimerId);
+  window.clearTimeout(signalingTimeoutId);
   stopTimer();
   setSpeakingState(false);
   setCallingState(false);
@@ -190,6 +193,10 @@ async function startCall() {
   setStatus("Соединяю с Alex...", "Разреши микрофон, если телефон спросит.");
 
   try {
+    signalingTimeoutId = window.setTimeout(() => {
+      setStatus("Соединение заняло слишком долго", "Render или OpenAI не вернул audio answer. Проверь Render logs.");
+    }, SIGNALING_TIMEOUT_MS);
+
     peerConnection = new RTCPeerConnection();
     peerConnection.addEventListener("connectionstatechange", () => {
       const state = peerConnection?.connectionState || "unknown";
@@ -252,8 +259,12 @@ async function startCall() {
     });
 
     const answerSdp = await response.text();
+    window.clearTimeout(signalingTimeoutId);
     if (!response.ok) {
       throw new Error(answerSdp || "Realtime server error");
+    }
+    if (!answerSdp.trim().startsWith("v=0")) {
+      throw new Error(`Server returned non-SDP answer: ${answerSdp.slice(0, 220)}`);
     }
 
     await peerConnection.setRemoteDescription({

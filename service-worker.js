@@ -8,6 +8,7 @@ const host = process.env.HOST || "127.0.0.1";
 const apiKey = process.env.OPENAI_API_KEY || "";
 const model = process.env.OPENAI_MODEL || "gpt-5.4-nano";
 const realtimeModel = process.env.OPENAI_REALTIME_MODEL || "gpt-realtime-mini";
+const realtimeVoice = process.env.OPENAI_REALTIME_VOICE || "marin";
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -120,50 +121,126 @@ async function handleRealtimeCall(req, res) {
       return;
     }
 
-    const form = new FormData();
-    form.set("sdp", sdp);
-    form.set("session", JSON.stringify({
-      type: "realtime",
-      model: realtimeModel,
-      instructions: realtimeInstructions(),
-      audio: {
-        input: {
-          turn_detection: {
-            type: "server_vad",
-            silence_duration_ms: 650
-          }
-        },
-        output: {
-          voice: "marin"
-        }
-      }
-    }));
-
-    const response = await fetch("https://api.openai.com/v1/realtime/calls", {
-      method: "POST",
-      headers: {
-        "authorization": `Bearer ${apiKey}`,
-        "OpenAI-Safety-Identifier": "speakmate-web-user"
-      },
-      body: form
-    });
-
-    const answer = await response.text();
-    console.log(`Realtime OpenAI response status: ${response.status}. Content-Type: ${response.headers.get("content-type") || "unknown"}. Answer length: ${answer.length}.`);
-    if (!response.ok) {
-      console.error("Realtime error:", response.status, answer);
-      res.writeHead(response.status, { ...corsHeaders(), "content-type": "text/plain; charset=utf-8" });
-      res.end(answer || "OpenAI Realtime request failed.");
-      return;
-    }
+    const result = await createRealtimeAnswer(sdp);
+    console.log(`Realtime SDP exchange succeeded via ${result.method}. Answer length: ${result.answer.length}.`);
 
     res.writeHead(200, { ...corsHeaders(), "content-type": "application/sdp" });
-    res.end(answer);
+    res.end(result.answer);
   } catch (error) {
     console.error("Realtime server error:", error);
     res.writeHead(500, { ...corsHeaders(), "content-type": "text/plain; charset=utf-8" });
     res.end(error.message || "Realtime server error");
   }
+}
+
+async function createRealtimeAnswer(sdp) {
+  const attempts = [
+    () => createRealtimeAnswerViaCalls(sdp),
+    () => createRealtimeAnswerViaSdpEndpoint(sdp)
+  ];
+  const errors = [];
+
+  for (const attempt of attempts) {
+    try {
+      const result = await attempt();
+      if (result.answer.includes("v=0")) {
+        return result;
+      }
+      errors.push(`${result.method}: response did not look like SDP (${result.answer.slice(0, 220)})`);
+    } catch (error) {
+      errors.push(error.message || String(error));
+    }
+  }
+
+  throw new Error(`OpenAI Realtime SDP exchange failed. ${errors.join(" | ")}`);
+}
+
+async function createRealtimeAnswerViaCalls(sdp) {
+  const form = new FormData();
+  form.set("sdp", sdp);
+  form.set("session", JSON.stringify({
+    type: "realtime",
+    model: realtimeModel,
+    instructions: realtimeInstructions(),
+    audio: {
+      input: {
+        turn_detection: {
+          type: "server_vad",
+          silence_duration_ms: 650
+        }
+      },
+      output: {
+        voice: realtimeVoice
+      }
+    }
+  }));
+
+  const response = await fetch("https://api.openai.com/v1/realtime/calls", {
+    method: "POST",
+    headers: {
+      "authorization": `Bearer ${apiKey}`,
+      "OpenAI-Safety-Identifier": "speakmate-web-user"
+    },
+    body: form
+  });
+
+  const text = await response.text();
+  console.log(`Realtime calls endpoint status: ${response.status}. Content-Type: ${response.headers.get("content-type") || "unknown"}. Body length: ${text.length}.`);
+  if (!response.ok) {
+    throw new Error(`calls endpoint ${response.status}: ${text.slice(0, 600)}`);
+  }
+
+  return {
+    method: "calls",
+    answer: extractSdpAnswer(text)
+  };
+}
+
+async function createRealtimeAnswerViaSdpEndpoint(sdp) {
+  const url = new URL("https://api.openai.com/v1/realtime");
+  url.searchParams.set("model", realtimeModel);
+  url.searchParams.set("voice", realtimeVoice);
+  url.searchParams.set("instructions", realtimeInstructions());
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "authorization": `Bearer ${apiKey}`,
+      "content-type": "application/sdp",
+      "OpenAI-Beta": "realtime=v1",
+      "OpenAI-Safety-Identifier": "speakmate-web-user"
+    },
+    body: sdp
+  });
+
+  const text = await response.text();
+  console.log(`Realtime SDP endpoint status: ${response.status}. Content-Type: ${response.headers.get("content-type") || "unknown"}. Body length: ${text.length}.`);
+  if (!response.ok) {
+    throw new Error(`sdp endpoint ${response.status}: ${text.slice(0, 600)}`);
+  }
+
+  return {
+    method: "sdp-endpoint",
+    answer: extractSdpAnswer(text)
+  };
+}
+
+function extractSdpAnswer(text) {
+  const clean = text.trim();
+  if (clean.startsWith("v=0")) {
+    return clean;
+  }
+
+  try {
+    const json = JSON.parse(clean);
+    for (const key of ["sdp", "answer", "answer_sdp"]) {
+      if (typeof json[key] === "string" && json[key].includes("v=0")) {
+        return json[key];
+      }
+    }
+  } catch {}
+
+  return clean;
 }
 
 async function handleChat(req, res) {
