@@ -39,16 +39,12 @@ function isProUser() {
   return localStorage.getItem("isPro") === "true" || localStorage.getItem("speakmate-is-pro") === "true";
 }
 
-function isAdminUnlimited() {
-  return localStorage.getItem("speakmate-admin-unlimited") === "true" || localStorage.getItem("speakmate-is-admin") === "true";
-}
-
-function activateAdminUnlimited() {
+function activateAdminProAccess() {
   localStorage.setItem("isPro", "true");
   localStorage.setItem("speakmate-is-pro", "true");
-  localStorage.setItem("speakmate-admin-unlimited", "true");
-  localStorage.setItem("speakmate-is-admin", "true");
-  setStatus("Админ-доступ активен", "Сауле, для тебя лимитов по времени нет.");
+  localStorage.removeItem("speakmate-admin-unlimited");
+  localStorage.removeItem("speakmate-is-admin");
+  setStatus("PRO-режим активен", "Сауле, лимит 5 реплик отключен. Работает обычный PRO-лимит: 15 минут в день.");
 }
 
 function containsAdminPhrase(value) {
@@ -90,14 +86,14 @@ function saveProUsage(state) {
 }
 
 function remainingProMs() {
-  if (!isProUser() || isAdminUnlimited()) {
+  if (!isProUser()) {
     return Infinity;
   }
   return Math.max(0, PRO_DAILY_LIMIT_MS - proUsageState().usedMs);
 }
 
 function addProUsage(durationMs) {
-  if (!isProUser() || isAdminUnlimited() || !durationMs) {
+  if (!isProUser() || !durationMs) {
     return;
   }
   const state = proUsageState();
@@ -312,7 +308,7 @@ function endProDailyLimit() {
 }
 
 function scheduleProLimitTimers() {
-  if (!isProUser() || isAdminUnlimited()) {
+  if (!isProUser()) {
     return;
   }
 
@@ -329,7 +325,7 @@ function scheduleProLimitTimers() {
 
 function handleRealtimeEvent(event) {
   if (containsAdminPhrase(event)) {
-    activateAdminUnlimited();
+    activateAdminProAccess();
   }
   if (event.type === "response.audio.delta") {
     setSpeakingState(true);
@@ -362,7 +358,7 @@ async function startCall() {
   userTurns = 0;
   isEnding = false;
   startCallButton.disabled = true;
-  if (isProUser() && !isAdminUnlimited() && remainingProMs() <= 0) {
+  if (isProUser() && remainingProMs() <= 0) {
     setStatus(PRO_LIMIT_END_MESSAGE, "Завтра лимит обновится автоматически.");
     startCallButton.disabled = false;
     return;
@@ -491,7 +487,7 @@ installButton.addEventListener("click", async () => {
 window.addEventListener("pagehide", () => cleanupCall());
 
 if (new URLSearchParams(window.location.search).get("admin")?.toLowerCase() === "saule") {
-  activateAdminUnlimited();
+  activateAdminProAccess();
 }
 
 schedulePracticeReminder();

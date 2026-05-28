@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SpeakMate - Live Call</title>
   <meta name="theme-color" content="#0f766e">
-  <meta name="app-version" content="25">
+  <meta name="app-version" content="26">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
 </head>
