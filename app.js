@@ -191,6 +191,24 @@ async function startCall() {
 
   try {
     peerConnection = new RTCPeerConnection();
+    peerConnection.addEventListener("connectionstatechange", () => {
+      const state = peerConnection?.connectionState || "unknown";
+      if (state === "connecting") {
+        setStatus("Соединение с голосом...", "Телефон соединяется с Alex через защищенный аудиоканал.");
+      }
+      if (state === "connected") {
+        setStatus("Созвон идет", "Говори как по телефону. Alex слышит и отвечает голосом.");
+      }
+      if (["failed", "disconnected", "closed"].includes(state) && !isEnding) {
+        setStatus("Связь прервалась", `WebRTC status: ${state}. Попробуй позвонить еще раз.`);
+      }
+    });
+    peerConnection.addEventListener("iceconnectionstatechange", () => {
+      const state = peerConnection?.iceConnectionState || "unknown";
+      if (state === "failed") {
+        setStatus("Не удалось соединить аудио", "ICE failed. Проверь интернет и попробуй еще раз.");
+      }
+    });
     remoteAudio = createRemoteAudioElement();
 
     peerConnection.ontrack = (event) => {
@@ -242,6 +260,7 @@ async function startCall() {
       type: "answer",
       sdp: answerSdp
     });
+    setStatus("Подключаю аудиоканал...", "Если Alex не заговорит через несколько секунд, открой диагностику Render.");
   } catch (error) {
     cleanupCall();
     setStatus("Не получилось начать звонок", error.message || "Проверь Render, API key и интернет.");

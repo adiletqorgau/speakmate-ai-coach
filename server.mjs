@@ -18,6 +18,16 @@ const types = {
 };
 
 createServer(async (req, res) => {
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, corsHeaders());
+    res.end();
+    return;
+  }
+
+  if (req.method === "GET" && req.url === "/api/realtime/diagnostics") {
+    return handleRealtimeDiagnostics(res);
+  }
+
   if (req.method === "POST" && req.url === "/api/realtime/call") {
     return handleRealtimeCall(req, res);
   }
@@ -43,20 +53,73 @@ createServer(async (req, res) => {
   }
 }).listen(port, host, () => {
   console.log(`SpeakMate is running at http://${host}:${port}`);
+  console.log(`Realtime model: ${realtimeModel}`);
+  console.log(`OpenAI key present: ${apiKey ? "yes" : "no"}`);
+  console.log(`Node version: ${process.version}`);
   if (!apiKey) {
     console.log("OPENAI_API_KEY is not set yet. AI chat will show a setup message.");
   }
 });
 
+async function handleRealtimeDiagnostics(res) {
+  const diagnostics = {
+    ok: true,
+    service: "speakmate-ai-coach",
+    realtimeModel,
+    textModel: model,
+    hasOpenAiKey: Boolean(apiKey),
+    keyLooksValid: apiKey.startsWith("sk-") || apiKey.startsWith("sess-"),
+    nodeVersion: process.version,
+    checkedAt: new Date().toISOString()
+  };
+
+  if (!apiKey) {
+    return sendJson(res, 200, {
+      ...diagnostics,
+      openaiReachable: false,
+      message: "OPENAI_API_KEY is missing on Render."
+    });
+  }
+
+  try {
+    const response = await fetch(`https://api.openai.com/v1/models/${encodeURIComponent(realtimeModel)}`, {
+      headers: {
+        "authorization": `Bearer ${apiKey}`
+      }
+    });
+    const data = await response.json().catch(() => ({}));
+    return sendJson(res, 200, {
+      ...diagnostics,
+      openaiReachable: response.ok,
+      openaiStatus: response.status,
+      openaiModelId: data.id || null,
+      openaiError: data.error?.message || null
+    });
+  } catch (error) {
+    return sendJson(res, 200, {
+      ...diagnostics,
+      openaiReachable: false,
+      openaiError: error.message || "OpenAI diagnostics failed."
+    });
+  }
+}
+
 async function handleRealtimeCall(req, res) {
   try {
     if (!apiKey) {
-      res.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+      res.writeHead(500, { ...corsHeaders(), "content-type": "text/plain; charset=utf-8" });
       res.end("OPENAI_API_KEY is not set on the server.");
       return;
     }
 
     const sdp = await readText(req, 1_000_000);
+    console.log(`Realtime call requested. SDP length: ${sdp.length}. Model: ${realtimeModel}.`);
+    if (!sdp.includes("v=0")) {
+      res.writeHead(400, { ...corsHeaders(), "content-type": "text/plain; charset=utf-8" });
+      res.end("Invalid SDP offer received by server.");
+      return;
+    }
+
     const form = new FormData();
     form.set("sdp", sdp);
     form.set("session", JSON.stringify({
@@ -86,18 +149,19 @@ async function handleRealtimeCall(req, res) {
     });
 
     const answer = await response.text();
+    console.log(`Realtime OpenAI response status: ${response.status}. Content-Type: ${response.headers.get("content-type") || "unknown"}. Answer length: ${answer.length}.`);
     if (!response.ok) {
       console.error("Realtime error:", response.status, answer);
-      res.writeHead(response.status, { "content-type": "text/plain; charset=utf-8" });
+      res.writeHead(response.status, { ...corsHeaders(), "content-type": "text/plain; charset=utf-8" });
       res.end(answer || "OpenAI Realtime request failed.");
       return;
     }
 
-    res.writeHead(200, { "content-type": "application/sdp" });
+    res.writeHead(200, { ...corsHeaders(), "content-type": "application/sdp" });
     res.end(answer);
   } catch (error) {
     console.error("Realtime server error:", error);
-    res.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+    res.writeHead(500, { ...corsHeaders(), "content-type": "text/plain; charset=utf-8" });
     res.end(error.message || "Realtime server error");
   }
 }
@@ -323,6 +387,14 @@ function readJson(req) {
 }
 
 function sendJson(res, status, value) {
-  res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
+  res.writeHead(status, { ...corsHeaders(), "content-type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(value));
+}
+
+function corsHeaders() {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET,POST,OPTIONS",
+    "access-control-allow-headers": "content-type,authorization"
+  };
 }
