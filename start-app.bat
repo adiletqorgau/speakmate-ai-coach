@@ -1,47 +1,9 @@
-const CACHE = "speakmate-v21";
-const ASSETS = [
-  "./",
-  "./index.html",
-  "./styles.css",
-  "./app.js",
-  "./manifest.webmanifest",
-  "./assets/ai-tutor.png"
-];
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
-  self.skipWaiting();
-});
-
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => Promise.all(
-      keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))
-    ))
-  );
-  self.clients.claim();
-});
-
-self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-  if (url.pathname.startsWith("/api/")) {
-    return;
-  }
-
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match("./index.html"))
-    );
-    return;
-  }
-
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-        return response;
-      })
-      .catch(() => caches.match(event.request))
-  );
-});
+@echo off
+cd /d "%~dp0"
+if "%OPENAI_API_KEY%"=="" (
+  echo.
+  echo OPENAI_API_KEY is not set.
+  echo The app will open, but real AI chat needs an OpenAI API key.
+  echo.
+)
+"C:\Users\Saule\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" server.mjs

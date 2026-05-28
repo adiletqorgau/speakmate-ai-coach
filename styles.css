@@ -1,9 +1,325 @@
-@echo off
-cd /d "%~dp0"
-echo Paste your OpenAI API key and press Enter.
-echo The key stays in this window only.
-set /p OPENAI_API_KEY=OPENAI_API_KEY:
-"C:\Users\Saule\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" server.mjs
-echo.
-echo Server stopped or crashed. Copy the message above and send it to Codex.
-pause
+:root {
+  --bg: #071311;
+  --panel: rgba(255, 255, 255, 0.08);
+  --ink: #f7fffd;
+  --muted: rgba(247, 255, 253, 0.68);
+  --teal: #12b8a6;
+  --teal-dark: #0f766e;
+  --coral: #f45d58;
+  --blue: #2563eb;
+  --line: rgba(255, 255, 255, 0.16);
+  --shadow: 0 28px 90px rgba(0, 0, 0, 0.38);
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(18, 184, 166, 0.28), transparent 34%),
+    linear-gradient(180deg, #10231f 0%, var(--bg) 100%);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button {
+  font: inherit;
+}
+
+.call-shell {
+  width: min(460px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 18px;
+  display: grid;
+  place-items: center;
+}
+
+.call-screen {
+  width: 100%;
+  min-height: calc(100vh - 36px);
+  display: grid;
+  grid-template-rows: auto 1fr auto auto auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 24px 18px;
+  text-align: center;
+}
+
+.call-top {
+  align-self: start;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: 44px;
+  line-height: 1;
+}
+
+.call-subtitle,
+.call-note {
+  margin: 10px auto 0;
+  max-width: 330px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.wave-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(310px, 82vw);
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+
+.wave-ring {
+  position: absolute;
+  inset: 16%;
+  border: 1px solid rgba(18, 184, 166, 0.5);
+  border-radius: 50%;
+  opacity: 0.26;
+}
+
+.call-screen.calling .wave-ring,
+.call-screen.speaking .wave-ring {
+  animation: wavePulse 2s ease-out infinite;
+}
+
+.ring-two {
+  animation-delay: 420ms !important;
+}
+
+.ring-three {
+  animation-delay: 840ms !important;
+}
+
+.wave-core {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 162px;
+  height: 162px;
+  background: radial-gradient(circle, rgba(18, 184, 166, 0.95), rgba(15, 118, 110, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  box-shadow: 0 28px 80px rgba(18, 184, 166, 0.28);
+}
+
+.wave-core span {
+  width: 8px;
+  height: 28px;
+  background: #fff;
+  border-radius: 999px;
+  opacity: 0.9;
+}
+
+.call-screen.calling .wave-core span,
+.call-screen.speaking .wave-core span {
+  animation: bars 680ms ease-in-out infinite;
+}
+
+.wave-core span:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.wave-core span:nth-child(3) {
+  animation-delay: 180ms;
+}
+
+.wave-core span:nth-child(4) {
+  animation-delay: 270ms;
+}
+
+.wave-core span:nth-child(5) {
+  animation-delay: 360ms;
+}
+
+.call-status {
+  display: grid;
+  gap: 8px;
+}
+
+.call-status strong {
+  font-size: 18px;
+}
+
+.call-status span {
+  color: var(--muted);
+  font-size: 30px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.call-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.call-button {
+  display: grid;
+  place-items: center;
+  width: 118px;
+  height: 118px;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+
+.call-button.start {
+  background: var(--teal);
+}
+
+.call-button.end {
+  background: var(--coral);
+}
+
+.call-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.install-button {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--radius);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+body.paywall-open {
+  overflow: hidden;
+}
+
+body.paywall-open::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(7, 19, 17, 0.62);
+  backdrop-filter: blur(12px);
+}
+
+.paywall-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  place-items: center;
+  padding: 16px;
+}
+
+body.paywall-open .paywall-modal {
+  display: grid;
+}
+
+.paywall-card {
+  width: min(420px, 100%);
+  padding: 24px;
+  color: #102033;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(215, 236, 231, 0.95);
+  border-radius: var(--radius);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.34);
+  animation: paywallSlide 260ms ease-out both;
+}
+
+.paywall-card h2 {
+  margin: 0 0 12px;
+  font-size: 28px;
+  line-height: 1.12;
+}
+
+.paywall-lead,
+.paywall-instructions {
+  color: #475569;
+  line-height: 1.5;
+}
+
+.paywall-price {
+  margin: 16px 0;
+  padding: 14px;
+  color: #fff;
+  background: var(--teal-dark);
+  border-radius: var(--radius);
+  font-size: 22px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.paywall-button {
+  display: grid;
+  place-items: center;
+  min-height: 52px;
+  color: #fff;
+  background: var(--blue);
+  border-radius: var(--radius);
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+}
+
+.paywall-close {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  margin-top: 8px;
+  border: 0;
+  color: #64748b;
+  background: transparent;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+@keyframes wavePulse {
+  from {
+    transform: scale(0.78);
+    opacity: 0.48;
+  }
+  to {
+    transform: scale(1.42);
+    opacity: 0;
+  }
+}
+
+@keyframes bars {
+  0%, 100% {
+    height: 22px;
+  }
+  50% {
+    height: 68px;
+  }
+}
+
+@keyframes paywallSlide {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
