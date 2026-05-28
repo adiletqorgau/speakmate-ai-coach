@@ -13,6 +13,9 @@ const PAYMENT_TELEGRAM_URL = "https://t.me/adiletqorgau";
 const FREE_CALL_MS = 3 * 60 * 1000;
 const FREE_TURN_LIMIT = 5;
 const SIGNALING_TIMEOUT_MS = 25000;
+const PRO_DAILY_LIMIT_MS = 15 * 60 * 1000;
+const PRO_GOODBYE_MS = 14 * 60 * 1000;
+const PRO_LIMIT_END_MESSAGE = "Твой сегодняшний лимит исчерпан. Алекс ждет твоего звонка завтра!";
 const TRIAL_END_MESSAGE = "На сегодня наш пробный созвон окончен, ты отлично поработал! Чтобы созваниваться со мной каждый день и учить язык без барьеров, активируй PRO-версию.";
 
 let peerConnection = null;
@@ -24,6 +27,8 @@ let timerId = null;
 let callLimitTimerId = null;
 let endAfterMessageTimerId = null;
 let signalingTimeoutId = null;
+let proGoodbyeTimerId = null;
+let proLimitTimerId = null;
 let userTurns = 0;
 let isEnding = false;
 let deferredInstallPrompt = null;
@@ -32,6 +37,126 @@ paywallTelegramButton.href = PAYMENT_TELEGRAM_URL;
 
 function isProUser() {
   return localStorage.getItem("isPro") === "true" || localStorage.getItem("speakmate-is-pro") === "true";
+}
+
+function isAdminUnlimited() {
+  return localStorage.getItem("speakmate-admin-unlimited") === "true" || localStorage.getItem("speakmate-is-admin") === "true";
+}
+
+function activateAdminUnlimited() {
+  localStorage.setItem("isPro", "true");
+  localStorage.setItem("speakmate-is-pro", "true");
+  localStorage.setItem("speakmate-admin-unlimited", "true");
+  localStorage.setItem("speakmate-is-admin", "true");
+  setStatus("Админ-доступ активен", "Сауле, для тебя лимитов по времени нет.");
+}
+
+function containsAdminPhrase(value) {
+  if (typeof value === "string") {
+    const clean = value.toLowerCase();
+    return clean.includes("сауле") || clean.includes("saule");
+  }
+  if (Array.isArray(value)) {
+    return value.some(containsAdminPhrase);
+  }
+  if (value && typeof value === "object") {
+    return Object.values(value).some(containsAdminPhrase);
+  }
+  return false;
+}
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function proUsageState() {
+  const state = JSON.parse(localStorage.getItem("speakmate-pro-usage") || "null") || {
+    day: todayKey(),
+    usedMs: 0,
+    lastCallAt: null
+  };
+  if (state.day !== todayKey()) {
+    return {
+      day: todayKey(),
+      usedMs: 0,
+      lastCallAt: state.lastCallAt || null
+    };
+  }
+  return state;
+}
+
+function saveProUsage(state) {
+  localStorage.setItem("speakmate-pro-usage", JSON.stringify(state));
+}
+
+function remainingProMs() {
+  if (!isProUser() || isAdminUnlimited()) {
+    return Infinity;
+  }
+  return Math.max(0, PRO_DAILY_LIMIT_MS - proUsageState().usedMs);
+}
+
+function addProUsage(durationMs) {
+  if (!isProUser() || isAdminUnlimited() || !durationMs) {
+    return;
+  }
+  const state = proUsageState();
+  state.usedMs = Math.min(PRO_DAILY_LIMIT_MS, state.usedMs + Math.max(0, durationMs));
+  state.lastCallAt = new Date().toISOString();
+  saveProUsage(state);
+}
+
+function nextReminderDelayMs() {
+  const now = new Date();
+  const atSeven = new Date(now);
+  atSeven.setHours(19, 0, 0, 0);
+
+  const state = proUsageState();
+  const lastCallDelay = state.lastCallAt
+    ? new Date(state.lastCallAt).getTime() + 24 * 60 * 60 * 1000 - now.getTime()
+    : Infinity;
+  const eveningDelay = atSeven.getTime() > now.getTime()
+    ? atSeven.getTime() - now.getTime()
+    : atSeven.getTime() + 24 * 60 * 60 * 1000 - now.getTime();
+
+  return Math.max(60_000, Math.min(eveningDelay, lastCallDelay));
+}
+
+async function requestNotificationPermission() {
+  if (!("Notification" in window) || Notification.permission === "granted") {
+    return;
+  }
+  if (Notification.permission === "default") {
+    try {
+      await Notification.requestPermission();
+    } catch {}
+  }
+}
+
+async function showPracticeReminder() {
+  if (!("Notification" in window) || Notification.permission !== "granted") {
+    return;
+  }
+  const title = "SpeakMate";
+  const body = "Алекс уже соскучилась и ждет твоего звонка! Твои 15 минут практики на сегодня готовы.";
+  const registration = await navigator.serviceWorker?.ready.catch(() => null);
+  if (registration?.showNotification) {
+    registration.showNotification(title, {
+      body,
+      icon: "assets/ai-tutor.png",
+      badge: "assets/ai-tutor.png"
+    });
+    return;
+  }
+  new Notification(title, { body });
+}
+
+function schedulePracticeReminder() {
+  window.clearTimeout(window.speakmateReminderTimer);
+  window.speakmateReminderTimer = window.setTimeout(() => {
+    showPracticeReminder();
+    schedulePracticeReminder();
+  }, nextReminderDelayMs());
 }
 
 function setStatus(text, note = "") {
@@ -86,10 +211,16 @@ function cleanupCall() {
   window.clearTimeout(callLimitTimerId);
   window.clearTimeout(endAfterMessageTimerId);
   window.clearTimeout(signalingTimeoutId);
+  window.clearTimeout(proGoodbyeTimerId);
+  window.clearTimeout(proLimitTimerId);
+  if (callStartedAt) {
+    addProUsage(Date.now() - callStartedAt);
+  }
   stopTimer();
   setSpeakingState(false);
   setCallingState(false);
   isEnding = false;
+  callStartedAt = 0;
 
   if (dataChannel) {
     try {
@@ -161,7 +292,45 @@ function sayTrialEndedThenDisconnect() {
   }, 8500);
 }
 
+function askAlexToCloseProSession() {
+  sendRealtimeEvent({
+    type: "response.create",
+    response: {
+      modalities: ["audio", "text"],
+      instructions: "Завершай диалог, у тебя осталось 60 секунд. Подведи итог и тепло попрощайся до завтра."
+    }
+  });
+}
+
+function endProDailyLimit() {
+  if (isEnding) {
+    return;
+  }
+  isEnding = true;
+  cleanupCall();
+  setStatus(PRO_LIMIT_END_MESSAGE, "Твои 15 минут практики на сегодня использованы. Завтра лимит обновится автоматически.");
+}
+
+function scheduleProLimitTimers() {
+  if (!isProUser() || isAdminUnlimited()) {
+    return;
+  }
+
+  const remaining = remainingProMs();
+  if (remaining <= 0) {
+    endProDailyLimit();
+    return;
+  }
+
+  const goodbyeIn = Math.max(0, Math.min(PRO_GOODBYE_MS, remaining - 60_000));
+  proGoodbyeTimerId = window.setTimeout(askAlexToCloseProSession, goodbyeIn);
+  proLimitTimerId = window.setTimeout(endProDailyLimit, remaining);
+}
+
 function handleRealtimeEvent(event) {
+  if (containsAdminPhrase(event)) {
+    activateAdminUnlimited();
+  }
   if (event.type === "response.audio.delta") {
     setSpeakingState(true);
   }
@@ -181,6 +350,9 @@ function handleRealtimeEvent(event) {
 }
 
 async function startCall() {
+  await requestNotificationPermission();
+  schedulePracticeReminder();
+
   if (!window.RTCPeerConnection || !navigator.mediaDevices?.getUserMedia) {
     setStatus("Этот браузер не поддерживает живой звонок", "Открой приложение в Chrome на телефоне и разреши микрофон.");
     return;
@@ -190,6 +362,11 @@ async function startCall() {
   userTurns = 0;
   isEnding = false;
   startCallButton.disabled = true;
+  if (isProUser() && !isAdminUnlimited() && remainingProMs() <= 0) {
+    setStatus(PRO_LIMIT_END_MESSAGE, "Завтра лимит обновится автоматически.");
+    startCallButton.disabled = false;
+    return;
+  }
   setStatus("Соединяю с Alex...", "Разреши микрофон, если телефон спросит.");
 
   try {
@@ -237,7 +414,9 @@ async function startCall() {
       startTimer();
       setStatus("Созвон идет", "Говори как по телефону. Alex слышит и отвечает голосом.");
       askAlexToStart();
-      if (!isProUser()) {
+      if (isProUser()) {
+        scheduleProLimitTimers();
+      } else {
         callLimitTimerId = window.setTimeout(sayTrialEndedThenDisconnect, FREE_CALL_MS);
       }
     });
@@ -282,6 +461,7 @@ async function startCall() {
 
 function endCall(showPayment = false) {
   cleanupCall();
+  schedulePracticeReminder();
   setStatus("Звонок завершен", "Нажми «Позвонить», чтобы начать снова.");
   if (showPayment) {
     openPaywall();
@@ -309,3 +489,9 @@ installButton.addEventListener("click", async () => {
 });
 
 window.addEventListener("pagehide", () => cleanupCall());
+
+if (new URLSearchParams(window.location.search).get("admin")?.toLowerCase() === "saule") {
+  activateAdminUnlimited();
+}
+
+schedulePracticeReminder();
