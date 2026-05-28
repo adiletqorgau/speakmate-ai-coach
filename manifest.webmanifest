@@ -1,17 +1,359 @@
-{
-  "name": "SpeakMate AI English Coach",
-  "short_name": "SpeakMate",
-  "description": "AI English teacher that talks, corrects, and guides daily practice.",
-  "start_url": "./?v=20",
-  "display": "standalone",
-  "background_color": "#f3fbf9",
-  "theme_color": "#0f766e",
-  "icons": [
-    {
-      "src": "assets/ai-tutor.png",
-      "sizes": "1024x1024",
-      "type": "image/png",
-      "purpose": "any"
-    }
-  ]
-}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpeakMate - AI English Coach</title>
+  <meta name="theme-color" content="#0f766e">
+  <meta name="app-version" content="21">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="coach-panel" aria-labelledby="app-title">
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">AI English Coach</p>
+          <h1 id="app-title">SpeakMate</h1>
+        </div>
+        <div class="top-actions">
+          <button class="icon-button" id="settingsButton" type="button" aria-label="Настройки Alex">⚙️</button>
+          <button class="icon-button" id="soundToggle" type="button" aria-label="Включить или выключить голос">🔊</button>
+        </div>
+      </div>
+
+      <div class="avatar-stage">
+        <div class="pulse-ring"></div>
+        <div class="avatar-wrap" id="avatarWrap">
+          <img class="avatar" src="assets/ai-tutor.png" alt="AI преподаватель английского">
+          <span class="eye-blink left-eye"></span>
+          <span class="eye-blink right-eye"></span>
+          <span class="mouth"></span>
+          <span class="voice-bars" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </span>
+        </div>
+        <div class="speech-bubble" id="coachBubble">
+          Hi! I am Alex. Today I will help you speak English with confidence.
+        </div>
+      </div>
+
+      <div class="mode-tabs" role="tablist" aria-label="Режим обучения">
+        <button class="mode-tab active" type="button" data-mode="talk">Разговор</button>
+        <button class="mode-tab" type="button" data-mode="lesson">Урок</button>
+        <button class="mode-tab" type="button" data-mode="daily">День</button>
+      </div>
+      <button class="install-button" id="installButton" type="button" hidden>Установить на телефон</button>
+    </section>
+
+    <nav class="app-nav" aria-label="Разделы приложения" hidden>
+      <button class="app-nav-button active" type="button" data-view="home">Главная</button>
+      <button class="app-nav-button" type="button" data-view="lesson">Урок</button>
+      <button class="app-nav-button" type="button" data-view="practice">Практика</button>
+      <button class="app-nav-button" type="button" data-view="day">День</button>
+      <button class="app-nav-button" type="button" data-view="settings">Настройки</button>
+    </nav>
+
+    <section class="home-actions" data-panel="home" aria-label="Быстрый старт" hidden>
+      <button type="button" data-jump-view="practice">Говорить с Alex</button>
+      <button type="button" data-jump-view="lesson">Начать урок</button>
+      <button type="button" data-jump-view="day">План на день</button>
+    </section>
+
+    <section class="practice-card main-dialog-card" data-panel="home practice" aria-label="Голосовая практика">
+      <div class="status-row">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Готова слушать</span>
+      </div>
+
+      <div class="transcript-box">
+        <span>Ты сказала</span>
+        <p id="transcript">Нажми микрофон и скажи фразу на английском.</p>
+      </div>
+
+      <div class="feedback-box">
+        <span>Исправление</span>
+        <p id="feedback">Я поправлю грамматику, произношение и предложу лучший вариант.</p>
+      </div>
+
+      <label class="type-box">
+        <span>Напиши или исправь фразу</span>
+        <textarea id="typedPhrase" rows="2" placeholder="Например: I want to speak English better"></textarea>
+      </label>
+
+      <div class="controls">
+        <button class="primary-button" id="micButton" type="button">🎙️ Говорить</button>
+        <button class="secondary-button" id="sendTextButton" type="button">Отправить</button>
+      </div>
+      <button class="hint-button" id="hintButton" type="button">Дать подсказку</button>
+    </section>
+
+    <section class="profile-card" data-panel="home day" aria-label="Личный план">
+      <div class="profile-head">
+        <div>
+          <span>Личный план</span>
+          <strong id="todayScore">0 phrases today</strong>
+        </div>
+        <button id="resetProgressButton" type="button">Сброс</button>
+      </div>
+      <div class="profile-grid">
+        <label>
+          <span>Уровень</span>
+          <select id="levelSelect">
+            <option value="beginner">Beginner</option>
+            <option value="elementary">Elementary</option>
+            <option value="pre-intermediate">Pre-Intermediate</option>
+            <option value="intermediate">Intermediate</option>
+          </select>
+        </label>
+        <label>
+          <span>Цель</span>
+          <select id="goalSelect">
+            <option value="daily conversation">Daily conversation</option>
+            <option value="travel English">Travel English</option>
+            <option value="work English">Work English</option>
+            <option value="grammar correction">Grammar correction</option>
+          </select>
+        </label>
+      </div>
+      <div class="progress-bar" aria-label="Прогресс дня">
+        <span id="progressBar"></span>
+      </div>
+      <p id="focusText">Focus: Say 5 short English sentences today.</p>
+    </section>
+
+    <section class="smart-lesson-card" data-panel="lesson" aria-label="Умный урок">
+      <div class="chat-header">
+        <strong>Умный урок</strong>
+        <span id="lessonStepBadge">1 / 5</span>
+      </div>
+      <div class="smart-lesson-body">
+        <p class="lesson-topic" id="smartLessonTopic">Today we practice simple English answers.</p>
+        <h2 id="smartLessonTitle">Short answers</h2>
+        <p id="smartLessonExplain">Alex will explain one small rule, then check your answer.</p>
+        <div class="lesson-example">
+          <span>Example</span>
+          <p id="smartLessonExample">I am learning English today.</p>
+        </div>
+        <label class="lesson-practice">
+          <span id="smartLessonPractice">Write one sentence about your day.</span>
+          <textarea id="smartLessonAnswer" rows="2" placeholder="My day is good."></textarea>
+        </label>
+        <p class="lesson-result" id="smartLessonResult">Press Start lesson when you are ready.</p>
+      </div>
+      <div class="lesson-actions">
+        <button class="secondary-button" id="startSmartLessonButton" type="button">Начать урок</button>
+        <button class="primary-button" id="checkSmartLessonButton" type="button">Проверить</button>
+        <button class="secondary-button" id="nextSmartLessonButton" type="button">Дальше</button>
+      </div>
+    </section>
+
+    <section class="exam-card removed-panel" data-panel="day" aria-label="Экзамен дня">
+      <div class="chat-header">
+        <strong>Экзамен дня</strong>
+        <span id="examScoreBadge">0 / 3</span>
+      </div>
+      <div class="exam-body">
+        <p id="examIntro">В конце дня Alex проверит разговор, грамматику и слова.</p>
+        <div class="exam-question">
+          <span id="examStepLabel">Question 1</span>
+          <p id="examQuestionText">Press Start exam when you are ready.</p>
+        </div>
+        <label class="exam-answer">
+          <span>Твой ответ</span>
+          <textarea id="examAnswer" rows="2" placeholder="Write your answer in English"></textarea>
+        </label>
+        <p class="exam-result" id="examResult">Тест займет 2-3 минуты.</p>
+      </div>
+      <div class="lesson-actions">
+        <button class="secondary-button" id="startExamButton" type="button">Начать экзамен</button>
+        <button class="primary-button" id="checkExamButton" type="button">Проверить</button>
+        <button class="secondary-button" id="nextExamButton" type="button">Дальше</button>
+      </div>
+    </section>
+
+    <section class="vocabulary-card removed-panel" data-panel="practice lesson" aria-label="Личный словарь">
+      <div class="chat-header">
+        <strong>Личный словарь</strong>
+        <button id="clearVocabularyButton" type="button">Очистить</button>
+      </div>
+      <div class="vocabulary-form">
+        <label>
+          <span>English word</span>
+          <input id="newWordInput" type="text" placeholder="confidence">
+        </label>
+        <label>
+          <span>Перевод</span>
+          <input id="newTranslationInput" type="text" placeholder="уверенность">
+        </label>
+        <button class="primary-button" id="addWordButton" type="button">Добавить</button>
+      </div>
+      <div class="vocabulary-quiz">
+        <p id="vocabularySummary">Сохраняй слова, которые хочешь повторять.</p>
+        <button class="secondary-button" id="quizWordButton" type="button">Спросить слово</button>
+      </div>
+      <div class="vocabulary-list" id="vocabularyList"></div>
+    </section>
+
+    <section class="reminder-card removed-panel" data-panel="day settings" aria-label="Напоминания">
+      <div class="chat-header">
+        <strong>Режим дня</strong>
+        <button id="resetRemindersButton" type="button">Сброс</button>
+      </div>
+      <p id="reminderStatus">Включи напоминания, и SpeakMate будет подсказывать, когда заниматься.</p>
+      <div class="reminder-grid">
+        <label>
+          <span>Утро</span>
+          <input id="morningTime" type="time" value="09:00">
+        </label>
+        <label>
+          <span>День</span>
+          <input id="dayTime" type="time" value="14:00">
+        </label>
+        <label>
+          <span>Вечер</span>
+          <input id="eveningTime" type="time" value="20:00">
+        </label>
+      </div>
+      <div class="reminder-actions">
+        <button class="primary-button" id="enableRemindersButton" type="button">Включить</button>
+        <button class="secondary-button" id="testReminderButton" type="button">Проверить</button>
+      </div>
+      <div class="reminder-list" id="reminderList"></div>
+    </section>
+
+    <section class="personality-card settings-modal" aria-label="Личность Alex" aria-hidden="true">
+      <div class="chat-header">
+        <strong>Личность Alex</strong>
+        <div class="modal-actions">
+          <button id="resetPersonalityButton" type="button">Сброс</button>
+          <button id="closeSettingsButton" type="button" aria-label="Закрыть настройки">✕</button>
+        </div>
+      </div>
+      <div class="personality-grid">
+        <label>
+          <span>Стиль</span>
+          <select id="coachStyleSelect">
+            <option value="kind">Добрый</option>
+            <option value="strict">Строгий</option>
+            <option value="funny">Веселый</option>
+            <option value="business">Деловой</option>
+          </select>
+        </label>
+        <label>
+          <span>Русский</span>
+          <select id="russianLevelSelect">
+            <option value="balanced">Поровну</option>
+            <option value="less">Меньше русского</option>
+            <option value="more">Больше русского</option>
+          </select>
+        </label>
+        <label>
+          <span>Скорость</span>
+          <select id="speechSpeedSelect">
+            <option value="slow">Медленно</option>
+            <option value="normal">Нормально</option>
+            <option value="fast">Быстро</option>
+          </select>
+        </label>
+        <label>
+          <span>Фокус</span>
+          <select id="coachFocusSelect">
+            <option value="speaking">Разговор</option>
+            <option value="grammar">Грамматика</option>
+            <option value="pronunciation">Произношение</option>
+            <option value="vocabulary">Слова</option>
+          </select>
+        </label>
+      </div>
+      <p id="personalitySummary">Alex будет говорить мягко, понятно и с коротким объяснением на русском.</p>
+    </section>
+
+    <section class="paywall-modal" aria-label="SpeakMate PRO" aria-hidden="true">
+      <div class="paywall-card">
+        <h2>🚀 SpeakMate PRO: Твой безлимитный английский</h2>
+        <p class="paywall-lead">Бесплатные лимиты ИИ на сегодня исчерпаны. Алекс готова тренировать тебя без ограничений, открывать закрытые темы для работы и путешествий, и углубленно разбирать твои ошибки!</p>
+        <div class="paywall-price">Всего 2 900 ₸ в месяц</div>
+        <div class="paywall-instructions">
+          <p>Переведи 2 900 ₸ на Kaspi по номеру: <strong>+77477510343</strong> (Получатель: Сауле К.) или по ссылке Kaspi QR.</p>
+          <p>Нажми кнопку ниже и отправь скриншот чека нашему менеджеру в Telegram.</p>
+          <p>Доступ активируется автоматически в течение 5 минут!</p>
+        </div>
+        <a class="paywall-button" id="paywallTelegramButton" href="https://t.me/adiletqorgau" target="_blank" rel="noopener">Подтвердить оплату в Telegram</a>
+        <button class="paywall-close" id="closePaywallButton" type="button">Позже</button>
+      </div>
+    </section>
+
+    <section class="chat-card" data-panel="home practice" aria-label="Диалог с преподавателем">
+      <div class="chat-header">
+        <strong>Живой диалог</strong>
+        <button id="clearChatButton" type="button">Очистить</button>
+      </div>
+      <div class="chat-list" id="chatList"></div>
+    </section>
+
+    <section class="mistakes-card" data-panel="practice day" aria-label="Мои ошибки">
+      <div class="chat-header">
+        <strong>Мои ошибки</strong>
+        <button id="clearMistakesButton" type="button">Очистить</button>
+      </div>
+      <div class="mistake-summary" id="mistakeSummary">Пока ошибок нет. Скажи или напиши фразу, и Alex сохранит полезные исправления.</div>
+      <div class="mistake-list" id="mistakeList"></div>
+    </section>
+
+    <section class="pronunciation-card" data-panel="practice" aria-label="Произношение">
+      <div class="chat-header">
+        <strong>Произношение</strong>
+        <button id="newPronunciationButton" type="button">Новая фраза</button>
+      </div>
+      <div class="pronunciation-target">
+        <span>Повтори фразу</span>
+        <p id="pronunciationTarget">I want to speak English clearly.</p>
+      </div>
+      <div class="pronunciation-score">
+        <div class="score-circle" id="scoreCircle">0%</div>
+        <p id="pronunciationFeedback">Нажми «Тренировать» и произнеси фразу вслух.</p>
+      </div>
+      <div class="controls">
+        <button class="primary-button" id="pronunciationButton" type="button">Тренировать</button>
+        <button class="secondary-button" id="hearTargetButton" type="button">Слушать</button>
+      </div>
+    </section>
+
+    <section class="daily-plan-card" data-panel="day" aria-label="План на день">
+      <div class="chat-header">
+        <strong>План на день</strong>
+        <button id="resetDailyPlanButton" type="button">Сброс</button>
+      </div>
+      <div class="daily-plan-list" id="dailyPlanList"></div>
+    </section>
+
+    <section class="memory-card removed-panel" data-panel="day settings" aria-label="Память ученика">
+      <div class="chat-header">
+        <strong>Слабые темы</strong>
+        <button id="resetMemoryButton" type="button">Сброс</button>
+      </div>
+      <p id="memorySummary">Alex будет запоминать частые ошибки и подбирать упражнения.</p>
+      <div class="weakness-list" id="weaknessList"></div>
+    </section>
+
+    <section class="lesson-grid" data-panel="lesson" aria-label="План обучения">
+      <article class="lesson-card">
+        <strong>Слова дня</strong>
+        <ul id="wordsList"></ul>
+      </article>
+      <article class="lesson-card">
+        <strong>Мини-диалог</strong>
+        <p id="dialogTask"></p>
+      </article>
+      <article class="lesson-card wide">
+        <strong>Задание прямо сейчас</strong>
+        <p id="currentTask"></p>
+      </article>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
