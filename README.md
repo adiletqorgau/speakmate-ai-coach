@@ -1,41 +1,103 @@
-# SpeakMate AI English Coach
+# Как установить SpeakMate на телефон
 
-Mobile PWA prototype with a real OpenAI-backed tutor endpoint.
-Default model: `gpt-4o-mini` for reliable low-cost chat practice.
+## Что уже готово
 
-## New in this version
+Приложение уже работает на компьютере:
 
-- Learner profile: level and learning goal.
-- Daily progress counter.
-- Daily focus task saved on the device.
-- The AI receives the learner profile and adapts replies.
+- есть AI-преподаватель Alex;
+- ответы идут через OpenAI API;
+- можно писать фразы;
+- можно говорить через микрофон в Chrome;
+- приложение подготовлено как PWA для телефона.
 
-## Run
+## Почему нельзя просто скачать на телефон
 
-1. Set an OpenAI API key in the terminal:
+OpenAI API key нельзя хранить внутри приложения на телефоне. Его могут украсть.
 
-```bat
-set OPENAI_API_KEY=your_key_here
-```
+Поэтому нужна схема:
 
-2. Start the app:
+телефон -> HTTPS-сайт приложения -> сервер -> OpenAI
 
-```bat
-start-app.bat
-```
+API key хранится только на сервере.
 
-3. Open:
+## Самый простой путь
+
+Использовать Render:
+
+https://render.com
+
+## Что понадобится
+
+1. GitHub аккаунт.
+2. Render аккаунт.
+3. OpenAI API key.
+4. Папка `english-ai-coach`.
+
+## Шаги
+
+1. Создать новый репозиторий на GitHub, например:
 
 ```text
-http://127.0.0.1:4321
+speakmate-ai-coach
 ```
 
-## Mobile
+2. Загрузить туда все файлы из папки `english-ai-coach`.
 
-To install on a phone, host the app on HTTPS. Render is the simplest first option:
+3. Открыть Render.
 
-1. Create a GitHub repository and upload this folder.
-2. Create a new Render Web Service from the repository.
-3. Add environment variable `OPENAI_API_KEY`.
-4. Start command: `npm start`.
-5. Open the Render HTTPS URL on your phone and choose Add to Home Screen.
+4. Нажать:
+
+```text
+New -> Web Service
+```
+
+5. Выбрать репозиторий `speakmate-ai-coach`.
+
+6. В настройках Render указать:
+
+```text
+Build Command: npm install
+Start Command: npm start
+```
+
+7. В Environment Variables добавить:
+
+```text
+OPENAI_API_KEY = твой OpenAI API key
+HOST = 0.0.0.0
+OPENAI_MODEL = gpt-4o-mini
+```
+
+8. Нажать Deploy.
+
+9. Render даст ссылку вида:
+
+```text
+https://speakmate-ai-coach.onrender.com
+```
+
+10. Открыть эту ссылку на телефоне.
+
+11. В Chrome на Android:
+
+```text
+Меню -> Добавить на главный экран
+```
+
+На iPhone в Safari:
+
+```text
+Поделиться -> На экран Домой
+```
+
+## Важно про расходы
+
+Сейчас используется модель:
+
+```text
+gpt-4o-mini
+```
+
+Она недорогая и подходит для разговорного английского.
+
+Чтобы случайно не потратить много, в OpenAI Platform поставь месячный лимит расходов.
