@@ -15,6 +15,7 @@ const FREE_TURN_LIMIT = 5;
 const SIGNALING_TIMEOUT_MS = 25000;
 const PRO_DAILY_LIMIT_MS = 15 * 60 * 1000;
 const PRO_GOODBYE_MS = 14 * 60 * 1000;
+const ADMIN_NAME_RU = "\u0441\u0430\u0443\u043b\u0435";
 const PRO_LIMIT_END_MESSAGE = "Твой сегодняшний лимит исчерпан. Алекс ждет твоего звонка завтра!";
 const TRIAL_END_MESSAGE = "На сегодня наш пробный созвон окончен, ты отлично поработал! Чтобы созваниваться со мной каждый день и учить язык без барьеров, активируй PRO-версию.";
 
@@ -48,6 +49,9 @@ function activateAdminProAccess() {
 }
 
 function containsAdminPhrase(value) {
+  if (typeof value === "string" && (value.toLowerCase().includes(ADMIN_NAME_RU) || value.toLowerCase().includes("saule"))) {
+    return true;
+  }
   if (typeof value === "string") {
     const clean = value.toLowerCase();
     return clean.includes("сауле") || clean.includes("saule");
