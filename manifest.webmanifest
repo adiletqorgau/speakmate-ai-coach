@@ -1,69 +1,17 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SpeakMate - Live Call</title>
-  <meta name="theme-color" content="#0f766e">
-  <meta name="app-version" content="27">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <main class="call-shell">
-    <section class="call-screen" aria-label="Живой звонок с Alex">
-      <div class="call-top">
-        <p class="eyebrow">SpeakMate Live</p>
-        <h1>Alex</h1>
-        <p class="call-subtitle" id="callSubtitle">AI English teacher</p>
-      </div>
-
-      <div class="wave-stage" id="waveStage" aria-hidden="true">
-        <span class="wave-ring ring-one"></span>
-        <span class="wave-ring ring-two"></span>
-        <span class="wave-ring ring-three"></span>
-        <div class="wave-core">
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </div>
-
-      <div class="call-status">
-        <strong id="callStatus">Нажми, чтобы позвонить Alex</strong>
-        <span id="callTimer">00:00</span>
-      </div>
-
-      <div class="call-actions">
-        <button class="call-button start" id="startCallButton" type="button" aria-label="Начать звонок">
-          <span>Позвонить</span>
-        </button>
-        <button class="call-button end" id="endCallButton" type="button" aria-label="Завершить звонок" hidden>
-          <span>Завершить</span>
-        </button>
-      </div>
-
-      <p class="call-note" id="callNote">Пробный звонок: 3 минуты или 5 реплик. Говори свободно, Alex ответит голосом.</p>
-      <button class="install-button" id="installButton" type="button" hidden>Установить на телефон</button>
-    </section>
-
-    <section class="paywall-modal" aria-label="SpeakMate PRO" aria-hidden="true">
-      <div class="paywall-card">
-        <h2>SpeakMate PRO</h2>
-        <p class="paywall-lead">Пробный созвон окончен. Чтобы созваниваться с Alex каждый день и учить английский без барьеров, активируй PRO-версию.</p>
-        <div class="paywall-price">Всего 9 990 ₸ в месяц<br><small>вместо 50 000 ₸ за обычного репетитора</small></div>
-        <div class="paywall-instructions">
-          <p>Оплати подписку через Kaspi или напиши менеджеру в Telegram.</p>
-          <p>После оплаты отправь скриншот чека. Доступ активируется в течение 5 минут.</p>
-        </div>
-        <a class="paywall-button" id="paywallTelegramButton" href="https://t.me/adiletqorgau" target="_blank" rel="noopener">Подтвердить оплату в Telegram</a>
-        <button class="paywall-close" id="closePaywallButton" type="button">Позже</button>
-      </div>
-    </section>
-  </main>
-
-  <script src="app.js"></script>
-</body>
-</html>
+{
+  "name": "SpeakMate AI English Coach",
+  "short_name": "SpeakMate",
+  "description": "Live AI English teacher with realtime voice calls.",
+  "start_url": "./?v=28",
+  "display": "standalone",
+  "background_color": "#f3fbf9",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "assets/ai-tutor.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
