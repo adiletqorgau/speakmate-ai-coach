@@ -228,19 +228,30 @@ async function createRealtimeAnswerViaSdpEndpoint(sdp) {
 function extractSdpAnswer(text) {
   const clean = text.trim();
   if (clean.startsWith("v=0")) {
-    return clean;
+    return normalizeSdp(clean);
   }
 
   try {
     const json = JSON.parse(clean);
     for (const key of ["sdp", "answer", "answer_sdp"]) {
       if (typeof json[key] === "string" && json[key].includes("v=0")) {
-        return json[key];
+        return normalizeSdp(json[key]);
       }
     }
   } catch {}
 
-  return clean;
+  return normalizeSdp(clean);
+}
+
+function normalizeSdp(sdp) {
+  const lines = String(sdp || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const start = lines.findIndex((line) => line === "v=0");
+  return start >= 0 ? `${lines.slice(start).join("\r\n")}\r\n` : "";
 }
 
 async function handleChat(req, res) {

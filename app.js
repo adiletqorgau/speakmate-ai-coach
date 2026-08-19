@@ -93,6 +93,17 @@ function formatTime(ms) {
   return `${minutes}:${seconds}`;
 }
 
+function normalizeSdpAnswer(sdp) {
+  const lines = String(sdp || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const start = lines.findIndex((line) => line === "v=0");
+  return start >= 0 ? `${lines.slice(start).join("\r\n")}\r\n` : "";
+}
+
 function startTimer() {
   callStartedAt = Date.now();
   callTimer.textContent = "00:00";
@@ -260,7 +271,7 @@ async function startCall() {
       body: offer.sdp
     });
 
-    const answerSdp = await response.text();
+    const answerSdp = normalizeSdpAnswer(await response.text());
     window.clearTimeout(signalingTimeoutId);
     if (!response.ok) {
       throw new Error(answerSdp || "Realtime server error");
