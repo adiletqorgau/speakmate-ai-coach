@@ -129,7 +129,10 @@ function rememberLessonEvent(role, text) {
 
 function buildMemorySummary(userLines, alexLines) {
   const lastUser = userLines.slice(-3).join(" | ") || "пока мало реплик ученика";
-  const lastAlex = alexLines.slice(-3).join(" | ") || "Alex начал разговор";
+  const lastAlex = alexLines
+    .filter((line) => !/repeat|try again|say it again|say it slower|повтори|скажи еще раз|медлен/i.test(line))
+    .slice(-3)
+    .join(" | ") || "Alex начал разговор";
   return `В прошлом занятии было ${userTurns} реплик ученика. Последние ответы ученика: ${lastUser}. Последние реплики Alex: ${lastAlex}. Продолжи мягко с места, где остановились, и сначала коротко вспомни прошлую тему.`;
 }
 
@@ -439,5 +442,11 @@ installButton.addEventListener("click", async () => {
 });
 
 window.addEventListener("pagehide", () => cleanupCall());
+
+if (new URLSearchParams(window.location.search).get("resetMemory") === "1") {
+  localStorage.removeItem(MEMORY_KEY);
+  lessonEvents = [];
+  setStatus("Память уроков очищена", "Начнем свежий разговор без старых повторений.");
+}
 
 schedulePracticeReminder();
