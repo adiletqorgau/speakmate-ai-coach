@@ -1,4 +1,4 @@
-const CACHE = "speakmate-v28";
+const CACHE = "speakmate-v29";
 const ASSETS = [
   "./",
   "./index.html",
@@ -55,7 +55,7 @@ self.addEventListener("notificationclick", (event) => {
           return client.focus();
         }
       }
-      return self.clients.openWindow("./?v=28");
+      return self.clients.openWindow("./?v=29");
     })
   );
 });

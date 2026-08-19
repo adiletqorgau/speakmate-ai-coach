@@ -8,6 +8,9 @@ const callNote = document.querySelector("#callNote");
 const installButton = document.querySelector("#installButton");
 
 const SIGNALING_TIMEOUT_MS = 25000;
+const LESSON_LIMIT_MS = 15 * 60 * 1000;
+const LESSON_WRAPUP_MS = 14 * 60 * 1000;
+const MEMORY_KEY = "speakmate-lesson-memory-v1";
 
 let peerConnection = null;
 let dataChannel = null;
@@ -15,10 +18,13 @@ let localStream = null;
 let remoteAudio = null;
 let callStartedAt = 0;
 let timerId = null;
+let lessonWrapupTimerId = null;
+let lessonEndTimerId = null;
 let signalingTimeoutId = null;
 let userTurns = 0;
 let isEnding = false;
 let deferredInstallPrompt = null;
+let lessonEvents = [];
 
 function nextReminderDelayMs() {
   const now = new Date();
@@ -104,6 +110,62 @@ function normalizeSdpAnswer(sdp) {
   return start >= 0 ? `${lines.slice(start).join("\r\n")}\r\n` : "";
 }
 
+function loadLessonMemory() {
+  try {
+    return JSON.parse(localStorage.getItem(MEMORY_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function rememberLessonEvent(role, text) {
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  if (!clean) {
+    return;
+  }
+  lessonEvents.push({ role, text: clean, at: new Date().toISOString() });
+  lessonEvents = lessonEvents.slice(-40);
+}
+
+function buildMemorySummary(userLines, alexLines) {
+  const lastUser = userLines.slice(-3).join(" | ") || "пока мало реплик ученика";
+  const lastAlex = alexLines.slice(-3).join(" | ") || "Alex начал разговор";
+  return `В прошлом занятии было ${userTurns} реплик ученика. Последние ответы ученика: ${lastUser}. Последние реплики Alex: ${lastAlex}. Продолжи мягко с места, где остановились, и сначала коротко вспомни прошлую тему.`;
+}
+
+function saveLessonMemory(reason = "call-ended") {
+  const userLines = lessonEvents
+    .filter((item) => item.role === "user")
+    .map((item) => item.text)
+    .slice(-8);
+  const alexLines = lessonEvents
+    .filter((item) => item.role === "alex")
+    .map((item) => item.text)
+    .slice(-8);
+
+  localStorage.setItem(MEMORY_KEY, JSON.stringify({
+    savedAt: new Date().toISOString(),
+    reason,
+    durationSeconds: callStartedAt ? Math.round((Date.now() - callStartedAt) / 1000) : 0,
+    turns: userTurns,
+    lastUserPhrases: userLines,
+    lastAlexPhrases: alexLines,
+    summary: buildMemorySummary(userLines, alexLines)
+  }));
+}
+
+function encodeMemoryHeader(memory) {
+  if (!memory) {
+    return "";
+  }
+  const bytes = new TextEncoder().encode(JSON.stringify(memory));
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
 function startTimer() {
   callStartedAt = Date.now();
   callTimer.textContent = "00:00";
@@ -120,6 +182,11 @@ function stopTimer() {
 
 function cleanupCall() {
   window.clearTimeout(signalingTimeoutId);
+  window.clearTimeout(lessonWrapupTimerId);
+  window.clearTimeout(lessonEndTimerId);
+  if (callStartedAt && lessonEvents.length) {
+    saveLessonMemory();
+  }
   stopTimer();
   setSpeakingState(false);
   setCallingState(false);
@@ -168,13 +235,52 @@ function sendRealtimeEvent(event) {
 }
 
 function askAlexToStart() {
+  const memory = loadLessonMemory();
+  const memoryPrompt = memory?.summary
+    ? `Before the first question, warmly say in Russian: "В прошлый раз мы остановились вот здесь..." Then briefly continue from this memory: ${memory.summary}`
+    : "Start the call first. Greet the learner warmly in English, then ask one very easy question.";
+
   sendRealtimeEvent({
     type: "response.create",
     response: {
       modalities: ["audio", "text"],
-      instructions: "Start the call first. Greet the learner warmly in English, then ask one very easy question. Keep it under 2 short sentences."
+      instructions: `${memoryPrompt} Keep it under 3 short sentences.`
     }
   });
+}
+
+function askAlexToWrapUp() {
+  if (isEnding) {
+    return;
+  }
+  setStatus("Подводим итог", "Урок почти завершен. Alex даст задание и попрощается до завтра.");
+  sendRealtimeEvent({
+    type: "response.create",
+    response: {
+      modalities: ["audio", "text"],
+      instructions: "Warmly wrap up today's English lesson. Speak mostly Russian with simple English examples. Briefly say what we practiced, give 3-5 useful words or phrases for tomorrow, then say that tomorrow we will continue from this place. Keep it natural and under 45 seconds."
+    }
+  });
+}
+
+function finishLessonForToday() {
+  if (isEnding) {
+    return;
+  }
+  isEnding = true;
+  saveLessonMemory("15-minute-limit");
+  setStatus("Урок на сегодня завершен", "Отлично поработали. Завтра Alex продолжит с этого места.");
+  window.setTimeout(() => {
+    cleanupCall();
+    setStatus("Урок на сегодня завершен", "Завтра продолжим с того места, где остановились.");
+  }, 6000);
+}
+
+function scheduleLessonLimit() {
+  window.clearTimeout(lessonWrapupTimerId);
+  window.clearTimeout(lessonEndTimerId);
+  lessonWrapupTimerId = window.setTimeout(askAlexToWrapUp, LESSON_WRAPUP_MS);
+  lessonEndTimerId = window.setTimeout(finishLessonForToday, LESSON_LIMIT_MS);
 }
 
 function handleRealtimeEvent(event) {
@@ -187,6 +293,15 @@ function handleRealtimeEvent(event) {
   if (event.type === "input_audio_buffer.speech_stopped") {
     userTurns += 1;
     callSubtitle.textContent = `${userTurns} реплик`;
+  }
+  if (event.type === "conversation.item.input_audio_transcription.completed") {
+    rememberLessonEvent("user", event.transcript);
+  }
+  if (event.type === "response.audio_transcript.done") {
+    rememberLessonEvent("alex", event.transcript);
+  }
+  if (event.type === "response.text.done") {
+    rememberLessonEvent("alex", event.text);
   }
   if (event.type === "error") {
     setStatus("Ошибка звонка", event.error?.message || "Попробуй завершить и позвонить еще раз.");
@@ -204,6 +319,7 @@ async function startCall() {
 
   cleanupCall();
   userTurns = 0;
+  lessonEvents = [];
   isEnding = false;
   startCallButton.disabled = true;
   setStatus("Соединяю с Alex...", "Разреши микрофон, если телефон спросит.");
@@ -251,6 +367,7 @@ async function startCall() {
     dataChannel.addEventListener("open", () => {
       setCallingState(true);
       startTimer();
+      scheduleLessonLimit();
       setStatus("Созвон идет", "Говори как по телефону. Alex слышит и отвечает голосом.");
       askAlexToStart();
     });
@@ -267,7 +384,10 @@ async function startCall() {
 
     const response = await fetch("/api/realtime/call", {
       method: "POST",
-      headers: { "content-type": "application/sdp" },
+      headers: {
+        "content-type": "application/sdp",
+        "x-speakmate-memory": encodeMemoryHeader(loadLessonMemory())
+      },
       body: offer.sdp
     });
 

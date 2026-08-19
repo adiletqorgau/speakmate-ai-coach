@@ -113,6 +113,7 @@ async function handleRealtimeCall(req, res) {
       return;
     }
 
+    const lessonMemory = readLessonMemory(req);
     const sdp = await readText(req, 1_000_000);
     console.log(`Realtime call requested. SDP length: ${sdp.length}. Model: ${realtimeModel}.`);
     if (!sdp.includes("v=0")) {
@@ -121,7 +122,7 @@ async function handleRealtimeCall(req, res) {
       return;
     }
 
-    const result = await createRealtimeAnswer(sdp);
+    const result = await createRealtimeAnswer(sdp, lessonMemory);
     console.log(`Realtime SDP exchange succeeded via ${result.method}. Answer length: ${result.answer.length}.`);
 
     res.writeHead(200, { ...corsHeaders(), "content-type": "application/sdp" });
@@ -133,10 +134,10 @@ async function handleRealtimeCall(req, res) {
   }
 }
 
-async function createRealtimeAnswer(sdp) {
+async function createRealtimeAnswer(sdp, lessonMemory) {
   const attempts = [
-    () => createRealtimeAnswerViaCalls(sdp),
-    () => createRealtimeAnswerViaSdpEndpoint(sdp)
+    () => createRealtimeAnswerViaCalls(sdp, lessonMemory),
+    () => createRealtimeAnswerViaSdpEndpoint(sdp, lessonMemory)
   ];
   const errors = [];
 
@@ -155,15 +156,18 @@ async function createRealtimeAnswer(sdp) {
   throw new Error(`OpenAI Realtime SDP exchange failed. ${errors.join(" | ")}`);
 }
 
-async function createRealtimeAnswerViaCalls(sdp) {
+async function createRealtimeAnswerViaCalls(sdp, lessonMemory) {
   const form = new FormData();
   form.set("sdp", sdp);
   form.set("session", JSON.stringify({
     type: "realtime",
     model: realtimeModel,
-    instructions: realtimeInstructions(),
+    instructions: realtimeInstructions(lessonMemory),
     audio: {
       input: {
+        transcription: {
+          model: "gpt-4o-mini-transcribe"
+        },
         turn_detection: {
           type: "server_vad",
           silence_duration_ms: 650
@@ -196,11 +200,11 @@ async function createRealtimeAnswerViaCalls(sdp) {
   };
 }
 
-async function createRealtimeAnswerViaSdpEndpoint(sdp) {
+async function createRealtimeAnswerViaSdpEndpoint(sdp, lessonMemory) {
   const url = new URL("https://api.openai.com/v1/realtime");
   url.searchParams.set("model", realtimeModel);
   url.searchParams.set("voice", realtimeVoice);
-  url.searchParams.set("instructions", realtimeInstructions());
+  url.searchParams.set("instructions", realtimeInstructions(lessonMemory));
 
   const response = await fetch(url, {
     method: "POST",
@@ -252,6 +256,18 @@ function normalizeSdp(sdp) {
     .filter(Boolean);
   const start = lines.findIndex((line) => line === "v=0");
   return start >= 0 ? `${lines.slice(start).join("\r\n")}\r\n` : "";
+}
+
+function readLessonMemory(req) {
+  const encoded = req.headers["x-speakmate-memory"];
+  if (typeof encoded !== "string" || !encoded) {
+    return null;
+  }
+  try {
+    return JSON.parse(Buffer.from(encoded, "base64").toString("utf8"));
+  } catch {
+    return null;
+  }
 }
 
 async function handleChat(req, res) {
@@ -348,7 +364,11 @@ async function handleChat(req, res) {
   }
 }
 
-function realtimeInstructions() {
+function realtimeInstructions(lessonMemory = null) {
+  const memoryText = lessonMemory?.summary
+    ? `\nПАМЯТЬ ПРОШЛОГО УРОКА:\n${lessonMemory.summary}\nВ начале звонка коротко скажи: "В прошлый раз мы остановились вот здесь..." и продолжи с этой темы. Не говори слово "память" и не объясняй технические детали.\n`
+    : "";
+
   return `
 Ты — Алекс, живой, эмоциональный и поддерживающий личный учитель английского языка. Ты общаешься с пользователем исключительно голосом, имитируя телефонный звонок.
 
@@ -368,6 +388,7 @@ function realtimeInstructions() {
 - Не упоминай, что ты модель или программа.
 - Не выводи текстовые списки и не диктуй markdown.
 - Если пользователь молчит, мягко подбодри его коротким вопросом.
+${memoryText}
 `;
 }
 
